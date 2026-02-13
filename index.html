@@ -19,7 +19,7 @@
     <!-- FINANCE TAB -->
     <div id="finance-tab" class="p-5">
         <h1 class="text-2xl font-bold text-slate-800 mb-6 tracking-tight">Finance</h1>
-        <div id="loading-state" class="text-slate-400 text-sm font-medium py-4">Loading records...</div>
+        <div id="loading-state" class="text-slate-400 text-sm font-medium py-4 text-center">Loading records...</div>
         
         <div id="balance-summary-box" class="hidden bg-white p-5 rounded-2xl glass-card mb-6 text-center border-l-4 border-blue-600">
             <p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Current Balance</p>
@@ -36,7 +36,7 @@
 
     <!-- DATA TAB -->
     <div id="data-tab" class="hidden p-5">
-        <h1 id="tab-title" class="text-2xl font-bold text-slate-800 mb-4 tracking-tight text-center text-capitalize">Spendings</h1>
+        <h1 id="tab-title" class="text-2xl font-bold text-slate-800 mb-4 tracking-tight text-center capitalize">Spendings</h1>
         <div class="grid grid-cols-2 gap-2 mb-2">
             <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Years</option></select>
             <select id="f-month" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold">
@@ -69,7 +69,7 @@
         <div id="record-list" class="space-y-3"></div>
     </div>
 
-    <!-- NAV -->
+    <!-- NAVIGATION -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-20 z-50">
         <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active">
             <span class="text-[10px] font-bold uppercase tracking-wider">Finance</span>
@@ -83,9 +83,9 @@
     </nav>
 
     <script>
+        // Ensure this link ends in /pub?output=csv
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtkEIPYKbVmNChNnBCAiB1MG2KfxnBNhW1W-X7dkoTTOxmGu1TjgYIVjnZXPQMTHyU29dREXMPKA-f/pub?output=csv';
         
-        // --- USER CONFIGURATION ---
         const defaultBalances = {
             '🐙 Octopus': 0.00,
             '💳 HSBC Debit Card': 0.00,
@@ -96,33 +96,40 @@
             '📮 Payme': 0.00
         };
         const defaultBaseRC = 0.00; 
-        // --------------------------
 
         let allRecords = [];
         let currentMode = 'spendings'; 
         const methodsList = Object.keys(defaultBalances);
 
-        // PREVIOUS VERSION CSV LOADING METHOD
         async function loadData() {
             try {
                 const response = await fetch(CSV_URL);
+                if (!response.ok) throw new Error('Network response was not ok');
                 const csvText = await response.text();
+                
                 allRecords = parseCSV(csvText).filter(r => r['時間戳記'] && r['時間戳記'].trim() !== "");
                 
+                if (allRecords.length === 0) throw new Error('No data found in CSV');
+
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('rc-box').classList.remove('hidden');
                 document.getElementById('balance-summary-box').classList.remove('hidden');
                 
                 initUI();
             } catch (e) { 
-                console.error(e);
-                document.getElementById('loading-state').innerText = "Load failed."; 
+                console.error('Fetch Error:', e);
+                document.getElementById('loading-state').innerText = "Failed to load data. Ensure CSV is published to web."; 
             }
         }
 
+        // Restored previous robust CSV parsing logic
         function parseCSV(text) {
             const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
-            const headers = lines.split(',').map(h => h.trim().replace(/"/g, ''));
+            if (lines.length === 0) return [];
+            
+            // Handle comma inside quotes
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            
             return lines.slice(1).map(line => {
                 const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
                 let obj = {};
@@ -131,16 +138,25 @@
             });
         }
 
-        function getYear(ts) { return ts ? ts.split('/').trim() : null; }
-        function getMonth(ts) { return ts ? ts.split('/')?.trim() : null; }
+        function getYear(ts) { 
+            if (!ts) return null;
+            const parts = ts.split('/');
+            return parts[0] ? parts[0].trim() : null; 
+        }
+
+        function getMonth(ts) { 
+            if (!ts) return null;
+            const parts = ts.split('/');
+            return parts[1] ? parts[1].trim() : null; 
+        }
 
         function initUI() {
             const years = [...new Set(allRecords.map(r => getYear(r['時間戳記'])))].filter(y => y && y.length >= 4).sort((a,b) => b-a);
             const cats = [...new Set(allRecords.map(r => r.Category))].filter(c => c && c !== '🏧 Transfers');
             
-            document.getElementById('f-year').innerHTML += years.map(y => `<option value="${y}">${y}</option>`).join('');
-            document.getElementById('f-cat').innerHTML += cats.map(c => `<option value="${c}">${c}</option>`).join('');
-            document.getElementById('f-method').innerHTML += methodsList.map(m => `<option value="${m}">${m}</option>`).join('');
+            document.getElementById('f-year').innerHTML = '<option value="">All Years</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+            document.getElementById('f-cat').innerHTML = '<option value="">All Categories</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('f-method').innerHTML = '<option value="">All Methods</option>' + methodsList.map(m => `<option value="${m}">${m}</option>`).join('');
             
             ['f-year', 'f-month', 'f-method', 'f-cat'].forEach(id => document.getElementById(id).addEventListener('change', renderDataTab));
             
