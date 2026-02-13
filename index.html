@@ -11,6 +11,8 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8FAFC; padding-bottom: 90px; }
         .tab-active { color: #2563EB; border-top: 3px solid #2563EB; background: #EFF6FF; }
         .glass-card { background: white; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        /* Removed background/shadow for loading state as requested */
+        #total-rc.loading { background: none; box-shadow: none; color: #64748B; } 
     </style>
 </head>
 <body>
@@ -20,9 +22,10 @@
         <h1 class="text-2xl font-bold text-slate-800 mb-6">Finance</h1>
         <div id="balances" class="space-y-3"></div>
         
-        <div class="mt-8 p-6 bg-slate-800 rounded-3xl text-white shadow-xl">
+        <!-- Updated Loading Container: No grey box, just text -->
+        <div class="mt-8 p-6 rounded-3xl">
             <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Total RC Accumulated</p>
-            <p id="total-rc" class="text-3xl font-bold mt-1 text-blue-400">Loading...</p>
+            <p id="total-rc" class="text-3xl font-bold mt-1 text-blue-600">Loading...</p>
         </div>
     </div>
 
@@ -48,14 +51,14 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 mb-6">
-            <div class="bg-blue-600 p-4 rounded-2xl text-white shadow-lg">
-                <p class="text-[10px] uppercase font-bold opacity-80">RC:</p>
-                <p id="filter-rc" class="text-xl font-bold">0.00</p>
+        <div class="grid grid-cols-2 gap-3 mb-6 text-center">
+            <div class="bg-white p-4 rounded-2xl glass-card">
+                <p class="text-[10px] uppercase font-bold text-slate-400">RC:</p>
+                <p id="filter-rc" class="text-xl font-bold text-blue-600">0.00</p>
             </div>
-            <div class="bg-slate-700 p-4 rounded-2xl text-white shadow-lg">
-                <p class="text-[10px] uppercase font-bold opacity-80">Cashback</p>
-                <p id="filter-cb" class="text-xl font-bold">0.00</p>
+            <div class="bg-white p-4 rounded-2xl glass-card">
+                <p class="text-[10px] uppercase font-bold text-slate-400">Cashback</p>
+                <p id="filter-cb" class="text-xl font-bold text-slate-700">0.00</p>
             </div>
         </div>
 
@@ -79,20 +82,21 @@
         const methods = ['🐙 Octopus','💳 HSBC Debit Card','🧰 HSBC Red Card','⚔️ SCB','💵 Cash','💎 Alipay','📮 Payme'];
 
         async function loadData() {
-            document.getElementById('total-rc').innerText = "Loading...";
             try {
                 const response = await fetch(CSV_URL);
                 const csvText = await response.text();
                 allRecords = parseCSV(csvText);
                 initUI();
-            } catch (e) { console.error(e); }
+            } catch (e) { 
+                console.error(e); 
+                document.getElementById('total-rc').innerText = "Error loading data";
+            }
         }
 
         function parseCSV(text) {
             const lines = text.split('\n').filter(l => l.trim() !== '');
             const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
             return lines.slice(1).map(line => {
-                // Regex handles commas inside quotes common in CSVs
                 const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
                 let obj = {};
                 headers.forEach((h, i) => obj[h] = values[i]);
@@ -100,17 +104,33 @@
             });
         }
 
-        function initUI() {
-            const years = [...new Set(allRecords.map(r => {
-                const d = new Date(r['時間戳記']);
-                return isNaN(d.getFullYear()) ? null : d.getFullYear();
-            }))].filter(y => y !== null).sort((a,b) => b-a);
+        // Helper to handle Google Sheets "Timestamp" strings correctly
+        function getYear(dateStr) {
+            if (!dateStr) return null;
+            // Cleans "1/2/2024 at 10:00:00" to "1/2/2024 10:00:00" for parsing
+            const cleaned = dateStr.replace(/\s+at\s+/i, ' ');
+            const dateObj = new Date(cleaned);
+            return isNaN(dateObj.getFullYear()) ? null : dateObj.getFullYear();
+        }
 
+        function getMonth(dateStr) {
+            const cleaned = dateStr.replace(/\s+at\s+/i, ' ');
+            const dateObj = new Date(cleaned);
+            return isNaN(dateObj.getMonth()) ? null : dateObj.getMonth() + 1;
+        }
+
+        function initUI() {
+            // Fix: Dynamically list all available years from '時間戳記'
+            const years = [...new Set(allRecords.map(r => getYear(r['時間戳記'])))].filter(y => y !== null).sort((a,b) => b-a);
             const cats = [...new Set(allRecords.map(r => r.Category))].filter(c => c);
             
             document.getElementById('f-year').innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
-            document.getElementById('f-year').value = new Date().getFullYear();
+            
+            // Default to current year/month if they exist in data
+            const currentYear = new Date().getFullYear();
+            if (years.includes(currentYear)) document.getElementById('f-year').value = currentYear;
             document.getElementById('f-month').value = new Date().getMonth() + 1;
+
             document.getElementById('f-method').innerHTML += methods.map(m => `<option value="${m}">${m}</option>`).join('');
             document.getElementById('f-cat').innerHTML += cats.map(c => `<option value="${c}">${c}</option>`).join('');
 
@@ -154,10 +174,7 @@
             const fc = document.getElementById('f-cat').value;
 
             const filtered = allRecords.filter(r => {
-                const d = new Date(r['時間戳記']);
-                // Strict check for valid date parsing
-                if (isNaN(d.getTime())) return false; 
-                return d.getFullYear() == fy && (d.getMonth() + 1) == fm &&
+                return getYear(r['時間戳記']) == fy && getMonth(r['時間戳記']) == fm &&
                        (!fme || r.Method === fme) && (!fc || r.Category === fc);
             });
 
@@ -178,7 +195,7 @@
                         borderWidth: 2
                     }]
                 },
-                options: { cutout: '70%', plugins: { legend: { display: false } }, maintainAspectRatio: false }
+                options: { cutout: '75%', plugins: { legend: { display: false } }, maintainAspectRatio: false }
             });
 
             document.getElementById('spending-list').innerHTML = filtered.reverse().map(r => `
