@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Finance Tracker</title>
+    <title>Finance Tracker 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com');
@@ -11,7 +11,7 @@
         .tab-active { color: #2563EB; border-top: 4px solid #2563EB; background: #EFF6FF; }
         .glass-card { background: white; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         .hidden { display: none !important; }
-        .tag { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; white-space: nowrap; }
+        .tag { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; white-space: normal; }
     </style>
 </head>
 <body>
@@ -32,7 +32,8 @@
     <div id="spendings-tab" class="hidden p-5">
         <h1 class="text-2xl font-bold text-slate-800 mb-4 tracking-tight">Spendings</h1>
         
-        <div class="grid grid-cols-2 gap-2 mb-6">
+        <!-- Filter Bar -->
+        <div class="grid grid-cols-2 gap-2 mb-2">
             <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Years</option></select>
             <select id="f-month" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold">
                 <option value="">All Months</option>
@@ -45,12 +46,13 @@
             <select id="f-cat" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Categories</option></select>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 mb-8">
-            <div class="bg-blue-600 p-4 rounded-2xl text-white shadow-md">
+        <!-- RC & Cashback Summary (Reduced Spacing) -->
+        <div class="grid grid-cols-2 gap-3 mb-6">
+            <div class="bg-blue-600 p-4 rounded-2xl text-white shadow-md text-center">
                 <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">RC</p>
                 <p id="filter-rc" class="text-lg font-bold">0.00</p>
             </div>
-            <div class="bg-slate-700 p-4 rounded-2xl text-white shadow-md">
+            <div class="bg-slate-700 p-4 rounded-2xl text-white shadow-md text-center">
                 <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">Cashback</p>
                 <p id="filter-cb" class="text-lg font-bold">0.00</p>
             </div>
@@ -61,34 +63,41 @@
 
     <!-- NAVIGATION -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-20 z-50">
-        <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active transition-all">
+        <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active">
             <span class="text-[10px] font-bold uppercase tracking-wider">Finance</span>
         </button>
-        <button onclick="switchTab('spendings')" id="nav-spe" class="flex flex-col items-center justify-center w-full h-full text-slate-400 transition-all">
+        <button onclick="switchTab('spendings')" id="nav-spe" class="flex flex-col items-center justify-center w-full h-full text-slate-400">
             <span class="text-[10px] font-bold uppercase tracking-wider">Spendings</span>
         </button>
     </nav>
 
     <script>
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtkEIPYKbVmNChNnBCAiB1MG2KfxnBNhW1W-X7dkoTTOxmGu1TjgYIVjnZXPQMTHyU29dREXMPKA-f/pub?output=csv';
-        let allRecords = [];
-        const methodsList = ['🐙 Octopus','💳 HSBC Debit Card','🧰 HSBC Red Card','⚔️ SCB','💵 Cash','💎 Alipay','📮 Payme'];
+        
+        // --- DEFINE YOUR DEFAULT VALUES HERE ---
+        const defaultBalances = {
+            '🐙 Octopus': 48.70,
+            '💳 HSBC Debit Card': 0.00,
+            '🧰 HSBC Red Card': 0.00,
+            '⚔️ SCB': 0.00,
+            '💵 Cash': 0.00,
+            '💎 Alipay': 0.00,
+            '📮 Payme': 0.00
+        };
+        // ----------------------------------------
 
-        // YOUR REQUESTED LOADING LOGIC
+        let allRecords = [];
+        const methodsList = Object.keys(defaultBalances);
+
         async function loadData() {
             try {
                 const response = await fetch(CSV_URL);
                 const csvText = await response.text();
                 allRecords = parseCSV(csvText).filter(r => r['時間戳記'] && r['時間戳記'].trim() !== "");
-                
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('rc-box').classList.remove('hidden');
-                
                 initUI();
-            } catch (e) { 
-                console.error(e); 
-                document.getElementById('loading-state').innerText = "Load failed.";
-            }
+            } catch (e) { document.getElementById('loading-state').innerText = "Load failed."; }
         }
 
         function parseCSV(text) {
@@ -102,31 +111,16 @@
             });
         }
 
-        // Robust extractor for "2026/2/11 上午"
-        function getYearFromTS(ts) {
-            if (!ts) return null;
-            return ts.split('/')[0].trim();
-        }
-
-        function getMonthFromTS(ts) {
-            if (!ts) return null;
-            return ts.split('/')[1]?.trim();
-        }
+        function getYearFromTS(ts) { return ts ? ts.split('/')[0].trim() : null; }
+        function getMonthFromTS(ts) { return ts ? ts.split('/')[1]?.trim() : null; }
 
         function initUI() {
             const years = [...new Set(allRecords.map(r => getYearFromTS(r['時間戳記'])))].filter(y => y && y.length >= 4).sort((a,b) => b-a);
             const cats = [...new Set(allRecords.map(r => r.Category))].filter(c => c);
-            
-            const ySel = document.getElementById('f-year');
-            ySel.innerHTML += years.map(y => `<option value="${y}">${y}</option>`).join('');
-            
+            document.getElementById('f-year').innerHTML += years.map(y => `<option value="${y}">${y}</option>`).join('');
             document.getElementById('f-cat').innerHTML += cats.map(c => `<option value="${c}">${c}</option>`).join('');
             document.getElementById('f-method').innerHTML += methodsList.map(m => `<option value="${m}">${m}</option>`).join('');
-
-            ['f-year', 'f-month', 'f-method', 'f-cat'].forEach(id => {
-                document.getElementById(id).addEventListener('change', renderSpendings);
-            });
-
+            ['f-year', 'f-month', 'f-method', 'f-cat'].forEach(id => document.getElementById(id).addEventListener('change', renderSpendings));
             renderFinance();
             renderSpendings();
         }
@@ -134,17 +128,17 @@
         function renderFinance() {
             const container = document.getElementById('balances');
             container.innerHTML = methodsList.map(m => {
-                let sum = allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
+                let sum = defaultBalances[m]; // Start with the default value defined above
+                sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
                 if (m === '💳 HSBC Debit Card') {
                     sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0);
                 }
                 return `<div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card">
-                        <span class="text-slate-500 font-semibold text-xs uppercase tracking-wider">${m}</span>
+                        <span class="text-slate-500 font-semibold text-xs uppercase">${m}</span>
                         <span class="text-slate-900 font-bold">$${sum.toFixed(2)}</span>
                     </div>`;
             }).join('');
-            const totalRC = allRecords.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0);
-            document.getElementById('total-rc').innerText = totalRC.toFixed(2);
+            document.getElementById('total-rc').innerText = allRecords.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0).toFixed(2);
         }
 
         function renderSpendings() {
@@ -170,9 +164,9 @@
                 <div class="bg-white p-3 rounded-2xl glass-card flex items-center gap-3">
                     <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-slate-50 rounded-xl text-2xl">${emoji}</div>
                     <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-center">
+                        <div class="flex justify-between items-start">
                             <div class="min-w-0 flex-1">
-                                <h3 class="text-slate-900 font-bold text-sm truncate">${r.Item || 'Untitled'}</h3>
+                                <h3 class="text-slate-900 font-bold text-sm leading-tight break-words">${r.Item || 'Untitled'}</h3>
                                 <div class="flex flex-wrap gap-1 mt-1">
                                     <span class="tag bg-slate-100 text-slate-500">${r['時間戳記']}</span>
                                     <span class="tag bg-blue-50 text-blue-500">${r.Method}</span>
