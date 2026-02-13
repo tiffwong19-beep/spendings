@@ -21,7 +21,6 @@
         <h1 class="text-2xl font-bold text-slate-800 mb-6 tracking-tight">Finance</h1>
         <div id="loading-state" class="text-slate-400 text-sm font-medium py-4">Loading records...</div>
         
-        <!-- Current Balance Summary Box -->
         <div id="balance-summary-box" class="hidden bg-white p-5 rounded-2xl glass-card mb-6 text-center border-l-4 border-blue-600">
             <p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Current Balance</p>
             <p id="total-net-balance" class="text-3xl font-extrabold text-slate-800">$0.00</p>
@@ -103,16 +102,22 @@
         let currentMode = 'spendings'; 
         const methodsList = Object.keys(defaultBalances);
 
+        // RESTORED CSV LOADING METHOD FROM PREVIOUS VERSION
         async function loadData() {
             try {
                 const response = await fetch(CSV_URL);
                 const csvText = await response.text();
                 allRecords = parseCSV(csvText).filter(r => r['時間戳記'] && r['時間戳記'].trim() !== "");
+                
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('rc-box').classList.remove('hidden');
                 document.getElementById('balance-summary-box').classList.remove('hidden');
+                
                 initUI();
-            } catch (e) { document.getElementById('loading-state').innerText = "Load failed."; }
+            } catch (e) { 
+                console.error(e);
+                document.getElementById('loading-state').innerText = "Load failed."; 
+            }
         }
 
         function parseCSV(text) {
@@ -131,11 +136,14 @@
 
         function initUI() {
             const years = [...new Set(allRecords.map(r => getYear(r['時間戳記'])))].filter(y => y && y.length >= 4).sort((a,b) => b-a);
-            const cats = [...new Set(allRecords.map(r => r.Category))].filter(c => c);
+            const cats = [...new Set(allRecords.map(r => r.Category))].filter(c => c && c !== '🏧 Transfers');
+            
             document.getElementById('f-year').innerHTML += years.map(y => `<option value="${y}">${y}</option>`).join('');
             document.getElementById('f-cat').innerHTML += cats.map(c => `<option value="${c}">${c}</option>`).join('');
             document.getElementById('f-method').innerHTML += methodsList.map(m => `<option value="${m}">${m}</option>`).join('');
+            
             ['f-year', 'f-month', 'f-method', 'f-cat'].forEach(id => document.getElementById(id).addEventListener('change', renderDataTab));
+            
             renderFinance();
             renderDataTab();
         }
@@ -167,7 +175,9 @@
 
             const filtered = allRecords.filter(r => {
                 const amt = parseFloat(r.Amount) || 0;
+                // Exclude Transfers from Spending/Earnings list
                 if (r.Category === '🏧 Transfers') return false;
+                
                 const matchType = currentMode === 'spendings' ? amt < 0 : amt > 0;
                 const matchY = fy === "" || getYear(r['時間戳記']) === fy;
                 const matchM = fm === "" || getMonth(r['時間戳記']) === fm;
@@ -191,7 +201,7 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex justify-between items-start">
                             <div class="min-w-0 flex-1">
-                                <h3 class="text-slate-900 font-bold text-sm leading-tight break-words pr-1">${r.Item || 'Untitled'}</h3>
+                                <h3 class="text-slate-900 font-bold text-sm leading-tight break-words">${r.Item || 'Untitled'}</h3>
                                 <div class="flex flex-wrap gap-1 mt-1.5">
                                     <span class="tag bg-slate-100 text-slate-500">${r['時間戳記']}</span>
                                     <span class="tag bg-blue-50 text-blue-500">${r.Method}</span>
