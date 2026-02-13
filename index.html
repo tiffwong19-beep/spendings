@@ -61,10 +61,10 @@
 
     <!-- NAVIGATION -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-20 z-50">
-        <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active">
+        <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active transition-all">
             <span class="text-[10px] font-bold uppercase tracking-wider">Finance</span>
         </button>
-        <button onclick="switchTab('spendings')" id="nav-spe" class="flex flex-col items-center justify-center w-full h-full text-slate-400">
+        <button onclick="switchTab('spendings')" id="nav-spe" class="flex flex-col items-center justify-center w-full h-full text-slate-400 transition-all">
             <span class="text-[10px] font-bold uppercase tracking-wider">Spendings</span>
         </button>
     </nav>
@@ -74,20 +74,26 @@
         let allRecords = [];
         const methodsList = ['🐙 Octopus','💳 HSBC Debit Card','🧰 HSBC Red Card','⚔️ SCB','💵 Cash','💎 Alipay','📮 Payme'];
 
+        // YOUR REQUESTED LOADING LOGIC
         async function loadData() {
             try {
                 const response = await fetch(CSV_URL);
                 const csvText = await response.text();
                 allRecords = parseCSV(csvText).filter(r => r['時間戳記'] && r['時間戳記'].trim() !== "");
+                
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('rc-box').classList.remove('hidden');
+                
                 initUI();
-            } catch (e) { document.getElementById('loading-state').innerText = "Load failed."; }
+            } catch (e) { 
+                console.error(e); 
+                document.getElementById('loading-state').innerText = "Load failed.";
+            }
         }
 
         function parseCSV(text) {
             const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
-            const headers = lines.split(',').map(h => h.trim().replace(/"/g, ''));
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
             return lines.slice(1).map(line => {
                 const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
                 let obj = {};
@@ -96,21 +102,31 @@
             });
         }
 
+        // Robust extractor for "2026/2/11 上午"
         function getYearFromTS(ts) {
-            return ts ? ts.split('/')[0] : null;
+            if (!ts) return null;
+            return ts.split('/')[0].trim();
         }
 
         function getMonthFromTS(ts) {
-            return ts ? ts.split('/')[1] : null;
+            if (!ts) return null;
+            return ts.split('/')[1]?.trim();
         }
 
         function initUI() {
             const years = [...new Set(allRecords.map(r => getYearFromTS(r['時間戳記'])))].filter(y => y && y.length >= 4).sort((a,b) => b-a);
             const cats = [...new Set(allRecords.map(r => r.Category))].filter(c => c);
-            document.getElementById('f-year').innerHTML += years.map(y => `<option value="${y}">${y}</option>`).join('');
+            
+            const ySel = document.getElementById('f-year');
+            ySel.innerHTML += years.map(y => `<option value="${y}">${y}</option>`).join('');
+            
             document.getElementById('f-cat').innerHTML += cats.map(c => `<option value="${c}">${c}</option>`).join('');
             document.getElementById('f-method').innerHTML += methodsList.map(m => `<option value="${m}">${m}</option>`).join('');
-            ['f-year', 'f-month', 'f-method', 'f-cat'].forEach(id => document.getElementById(id).addEventListener('change', renderSpendings));
+
+            ['f-year', 'f-month', 'f-method', 'f-cat'].forEach(id => {
+                document.getElementById(id).addEventListener('change', renderSpendings);
+            });
+
             renderFinance();
             renderSpendings();
         }
@@ -119,10 +135,16 @@
             const container = document.getElementById('balances');
             container.innerHTML = methodsList.map(m => {
                 let sum = allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
-                if (m === '💳 HSBC Debit Card') sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0);
-                return `<div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card"><span class="text-slate-500 font-semibold text-xs uppercase tracking-wider">${m}</span><span class="text-slate-900 font-bold">$${sum.toFixed(2)}</span></div>`;
+                if (m === '💳 HSBC Debit Card') {
+                    sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0);
+                }
+                return `<div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card">
+                        <span class="text-slate-500 font-semibold text-xs uppercase tracking-wider">${m}</span>
+                        <span class="text-slate-900 font-bold">$${sum.toFixed(2)}</span>
+                    </div>`;
             }).join('');
-            document.getElementById('total-rc').innerText = allRecords.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0).toFixed(2);
+            const totalRC = allRecords.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0);
+            document.getElementById('total-rc').innerText = totalRC.toFixed(2);
         }
 
         function renderSpendings() {
@@ -171,6 +193,7 @@
             document.getElementById('nav-fin').className = `flex flex-col items-center justify-center w-full h-full ${tab === 'finance' ? 'tab-active' : 'text-slate-400'}`;
             document.getElementById('nav-spe').className = `flex flex-col items-center justify-center w-full h-full ${tab === 'spendings' ? 'tab-active' : 'text-slate-400'}`;
         }
+
         loadData();
     </script>
 </body>
