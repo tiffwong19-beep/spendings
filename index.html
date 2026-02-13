@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Finance Tracker</title>
+    <title>Finance Tracker 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net"></script>
     <style>
@@ -11,8 +11,7 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8FAFC; padding-bottom: 90px; }
         .tab-active { color: #2563EB; border-top: 3px solid #2563EB; background: #EFF6FF; }
         .glass-card { background: white; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        /* Removed background/shadow for loading state as requested */
-        #total-rc.loading { background: none; box-shadow: none; color: #64748B; } 
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -20,12 +19,16 @@
     <!-- FINANCE TAB -->
     <div id="finance-tab" class="p-5">
         <h1 class="text-2xl font-bold text-slate-800 mb-6">Finance</h1>
+        
+        <!-- Loading Indicator -->
+        <div id="loading-state" class="text-slate-400 text-sm font-medium">Loading records...</div>
+
         <div id="balances" class="space-y-3"></div>
         
-        <!-- Updated Loading Container: No grey box, just text -->
-        <div class="mt-8 p-6 rounded-3xl">
+        <!-- Total RC Box: Hidden by default -->
+        <div id="rc-box" class="hidden mt-8 p-6 bg-slate-800 rounded-3xl text-white shadow-xl">
             <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Total RC Accumulated</p>
-            <p id="total-rc" class="text-3xl font-bold mt-1 text-blue-600">Loading...</p>
+            <p id="total-rc" class="text-3xl font-bold mt-1 text-blue-400">0.00</p>
         </div>
     </div>
 
@@ -34,6 +37,7 @@
         <h1 class="text-2xl font-bold text-slate-800 mb-4">Spendings</h1>
         
         <div class="grid grid-cols-2 gap-2 mb-6">
+            <!-- Year filter is now populated dynamically -->
             <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none"></select>
             <select id="f-month" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none">
                 <option value="1">January</option><option value="2">February</option><option value="3">March</option>
@@ -51,14 +55,14 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 mb-6 text-center">
-            <div class="bg-white p-4 rounded-2xl glass-card">
-                <p class="text-[10px] uppercase font-bold text-slate-400">RC:</p>
-                <p id="filter-rc" class="text-xl font-bold text-blue-600">0.00</p>
+        <div class="grid grid-cols-2 gap-3 mb-6">
+            <div class="bg-blue-600 p-4 rounded-2xl text-white shadow-lg">
+                <p class="text-[10px] uppercase font-bold opacity-80">Filtered RC</p>
+                <p id="filter-rc" class="text-xl font-bold">0.00</p>
             </div>
-            <div class="bg-white p-4 rounded-2xl glass-card">
-                <p class="text-[10px] uppercase font-bold text-slate-400">Cashback</p>
-                <p id="filter-cb" class="text-xl font-bold text-slate-700">0.00</p>
+            <div class="bg-slate-700 p-4 rounded-2xl text-white shadow-lg">
+                <p class="text-[10px] uppercase font-bold opacity-80">Cashback</p>
+                <p id="filter-cb" class="text-xl font-bold">0.00</p>
             </div>
         </div>
 
@@ -67,10 +71,10 @@
 
     <!-- NAVIGATION -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-200 flex justify-around items-center h-20 z-50">
-        <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active transition-all">
+        <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active">
             <span class="text-xs font-bold">Finance</span>
         </button>
-        <button onclick="switchTab('spendings')" id="nav-spe" class="flex flex-col items-center justify-center w-full h-full text-slate-400 transition-all">
+        <button onclick="switchTab('spendings')" id="nav-spe" class="flex flex-col items-center justify-center w-full h-full text-slate-400">
             <span class="text-xs font-bold">Spendings</span>
         </button>
     </nav>
@@ -86,10 +90,15 @@
                 const response = await fetch(CSV_URL);
                 const csvText = await response.text();
                 allRecords = parseCSV(csvText);
+                
+                // Hide loading, show content
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('rc-box').classList.remove('hidden');
+                
                 initUI();
             } catch (e) { 
                 console.error(e); 
-                document.getElementById('total-rc').innerText = "Error loading data";
+                document.getElementById('loading-state').innerText = "Failed to load data.";
             }
         }
 
@@ -104,33 +113,34 @@
             });
         }
 
-        // Helper to handle Google Sheets "Timestamp" strings correctly
-        function getYear(dateStr) {
-            if (!dateStr) return null;
-            // Cleans "1/2/2024 at 10:00:00" to "1/2/2024 10:00:00" for parsing
-            const cleaned = dateStr.replace(/\s+at\s+/i, ' ');
-            const dateObj = new Date(cleaned);
-            return isNaN(dateObj.getFullYear()) ? null : dateObj.getFullYear();
+        // IMPROVED YEAR EXTRACTION: Specifically looks for 4-digit years in timestamp
+        function extractYear(ts) {
+            const match = ts.match(/\b(20\d{2})\b/);
+            return match ? match[1] : null;
         }
 
-        function getMonth(dateStr) {
-            const cleaned = dateStr.replace(/\s+at\s+/i, ' ');
-            const dateObj = new Date(cleaned);
-            return isNaN(dateObj.getMonth()) ? null : dateObj.getMonth() + 1;
+        // IMPROVED MONTH EXTRACTION: Handles common formats (MM/DD or DD/MM)
+        function extractMonth(ts) {
+            const parts = ts.split(/[\/\-]/);
+            if (parts.length < 2) return null;
+            // Assumes standard sheet formats where month is 1st or 2nd part
+            let m = parseInt(parts[0]);
+            if (m > 12) m = parseInt(parts[1]); 
+            return m;
         }
 
         function initUI() {
-            // Fix: Dynamically list all available years from '時間戳記'
-            const years = [...new Set(allRecords.map(r => getYear(r['時間戳記'])))].filter(y => y !== null).sort((a,b) => b-a);
+            // Build dynamic year list from data
+            const years = [...new Set(allRecords.map(r => extractYear(r['時間戳記'])))].filter(y => y).sort((a,b) => b-a);
             const cats = [...new Set(allRecords.map(r => r.Category))].filter(c => c);
             
-            document.getElementById('f-year').innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+            const yearSelect = document.getElementById('f-year');
+            yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
             
-            // Default to current year/month if they exist in data
-            const currentYear = new Date().getFullYear();
-            if (years.includes(currentYear)) document.getElementById('f-year').value = currentYear;
+            // Set default to 2026 if available, else most recent
+            if (years.includes("2026")) yearSelect.value = "2026";
+            
             document.getElementById('f-month').value = new Date().getMonth() + 1;
-
             document.getElementById('f-method').innerHTML += methods.map(m => `<option value="${m}">${m}</option>`).join('');
             document.getElementById('f-cat').innerHTML += cats.map(c => `<option value="${c}">${c}</option>`).join('');
 
@@ -140,13 +150,6 @@
 
             renderFinance();
             renderSpendings();
-        }
-
-        function switchTab(tab) {
-            document.getElementById('finance-tab').classList.toggle('hidden', tab !== 'finance');
-            document.getElementById('spendings-tab').classList.toggle('hidden', tab !== 'spendings');
-            document.getElementById('nav-fin').className = tab === 'finance' ? 'flex flex-col items-center justify-center w-full h-full tab-active' : 'flex flex-col items-center justify-center w-full h-full text-slate-400';
-            document.getElementById('nav-spe').className = tab === 'spendings' ? 'flex flex-col items-center justify-center w-full h-full tab-active' : 'flex flex-col items-center justify-center w-full h-full text-slate-400';
         }
 
         function renderFinance() {
@@ -174,8 +177,10 @@
             const fc = document.getElementById('f-cat').value;
 
             const filtered = allRecords.filter(r => {
-                return getYear(r['時間戳記']) == fy && getMonth(r['時間戳記']) == fm &&
-                       (!fme || r.Method === fme) && (!fc || r.Category === fc);
+                return extractYear(r['時間戳記']) == fy && 
+                       extractMonth(r['時間戳記']) == fm &&
+                       (!fme || r.Method === fme) && 
+                       (!fc || r.Category === fc);
             });
 
             document.getElementById('filter-rc').innerText = filtered.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0).toFixed(2);
@@ -195,7 +200,7 @@
                         borderWidth: 2
                     }]
                 },
-                options: { cutout: '75%', plugins: { legend: { display: false } }, maintainAspectRatio: false }
+                options: { cutout: '70%', plugins: { legend: { display: false } }, maintainAspectRatio: false }
             });
 
             document.getElementById('spending-list').innerHTML = filtered.reverse().map(r => `
@@ -209,6 +214,13 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        function switchTab(tab) {
+            document.getElementById('finance-tab').classList.toggle('hidden', tab !== 'finance');
+            document.getElementById('spendings-tab').classList.toggle('hidden', tab !== 'spendings');
+            document.getElementById('nav-fin').classList.toggle('tab-active', tab === 'finance');
+            document.getElementById('nav-spe').classList.toggle('tab-active', tab === 'spendings');
         }
 
         loadData();
