@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Finance Tracker</title>
+    <title>Finance Tracker 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net"></script>
     <style>
@@ -19,9 +19,7 @@
     <!-- FINANCE TAB -->
     <div id="finance-tab" class="p-5">
         <h1 class="text-2xl font-bold text-slate-800 mb-6">Finance</h1>
-        
         <div id="loading-state" class="text-slate-400 text-sm font-medium py-4">Loading records...</div>
-
         <div id="balances" class="space-y-3"></div>
         
         <!-- Total RC Box: Hidden during loading -->
@@ -36,15 +34,16 @@
         <h1 class="text-2xl font-bold text-slate-800 mb-4">Spendings</h1>
         
         <div class="grid grid-cols-2 gap-2 mb-6">
-            <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none"></select>
+            <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none"><option value="">All Years</option></select>
             <select id="f-month" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none">
+                <option value="">All Months</option>
                 <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
                 <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
                 <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
                 <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
             </select>
-            <select id="f-method" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none"><option value="">Method</option></select>
-            <select id="f-cat" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none"><option value="">Category</option></select>
+            <select id="f-method" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none"><option value="">All Methods</option></select>
+            <select id="f-cat" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none"><option value="">All Categories</option></select>
         </div>
 
         <div class="bg-white p-4 rounded-3xl mb-6 glass-card flex justify-center">
@@ -55,7 +54,7 @@
 
         <div class="grid grid-cols-2 gap-3 mb-6">
             <div class="bg-blue-600 p-4 rounded-2xl text-white shadow-md text-center">
-                <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">Filtered RC</p>
+                <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">RC</p>
                 <p id="filter-rc" class="text-xl font-bold">0.00</p>
             </div>
             <div class="bg-slate-700 p-4 rounded-2xl text-white shadow-md text-center">
@@ -88,10 +87,8 @@
                 const response = await fetch(CSV_URL);
                 const csvText = await response.text();
                 allRecords = parseCSV(csvText);
-                
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('rc-box').classList.remove('hidden');
-                
                 initUI();
             } catch (e) { 
                 document.getElementById('loading-state').innerText = "Load Failed.";
@@ -109,15 +106,14 @@
             });
         }
 
-        // Robust Year/Month extractor for "2026/2/11 上午 8:09:00" format
         function getYearFromTS(ts) {
             if (!ts) return null;
-            return ts.split('/')[0].trim(); // Takes '2026'
+            return ts.split('/')[0].trim();
         }
 
         function getMonthFromTS(ts) {
             if (!ts) return null;
-            return ts.split('/')[1].trim(); // Takes '2'
+            return ts.split('/')[1]?.trim();
         }
 
         function initUI() {
@@ -125,23 +121,20 @@
             const cats = [...new Set(allRecords.map(r => r.Category))].filter(c => c);
             
             const ySel = document.getElementById('f-year');
-            ySel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+            ySel.innerHTML += years.map(y => `<option value="${y}">${y}</option>`).join('');
             
-            // Auto-select 2026 if present
-            if (years.includes("2026")) ySel.value = "2026";
+            const cSel = document.getElementById('f-cat');
+            cSel.innerHTML += cats.map(c => `<option value="${c}">${c}</option>`).join('');
             
-            // Set to current month
-            document.getElementById('f-month').value = new Date().getMonth() + 1;
-            
-            document.getElementById('f-method').innerHTML += methods.map(m => `<option value="${m}">${m}</option>`).join('');
-            document.getElementById('f-cat').innerHTML += cats.map(c => `<option value="${c}">${c}</option>`).join('');
+            const mSel = document.getElementById('f-method');
+            mSel.innerHTML += methods.map(m => `<option value="${m}">${m}</option>`).join('');
 
             ['f-year', 'f-month', 'f-method', 'f-cat'].forEach(id => {
                 document.getElementById(id).addEventListener('change', renderSpendings);
             });
 
             renderFinance();
-            renderSpendings();
+            renderSpendings(); // Initial call shows everything because selects default to "" (All)
         }
 
         function renderFinance() {
@@ -151,13 +144,11 @@
                 if (m === '💳 HSBC Debit Card') {
                     sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0);
                 }
-                return `
-                    <div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card">
+                return `<div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card">
                         <span class="text-slate-500 font-semibold text-xs uppercase tracking-wider">${m}</span>
-                        <span class="text-slate-900 font-bold tracking-tight">${sum.toFixed(2)}</span>
+                        <span class="text-slate-900 font-bold">${sum.toFixed(2)}</span>
                     </div>`;
             }).join('');
-
             const totalRC = allRecords.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0);
             document.getElementById('total-rc').innerText = totalRC.toFixed(2);
         }
@@ -168,18 +159,22 @@
             const fme = document.getElementById('f-method').value;
             const fc = document.getElementById('f-cat').value;
 
+            // DEFAULT DISPLAY ALL: If value is "", the filter condition is skipped
             const filtered = allRecords.filter(r => {
-                return getYearFromTS(r['時間戳記']) === fy && 
-                       getMonthFromTS(r['時間戳記']) === fm &&
-                       (!fme || r.Method === fme) && 
-                       (!fc || r.Category === fc);
+                const matchY = !fy || getYearFromTS(r['時間戳記']) === fy;
+                const matchM = !fm || getMonthFromTS(r['時間戳記']) === fm;
+                const matchMe = !fme || r.Method === fme;
+                const matchCa = !fc || r.Category === fc;
+                return matchY && matchM && matchMe && matchCa;
             });
 
             document.getElementById('filter-rc').innerText = filtered.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0).toFixed(2);
             document.getElementById('filter-cb').innerText = filtered.reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0).toFixed(2);
 
             const chartData = {};
-            filtered.forEach(r => chartData[r.Category] = (chartData[r.Category] || 0) + (parseFloat(r.Amount) || 0));
+            filtered.forEach(r => {
+                if (r.Category) chartData[r.Category] = (chartData[r.Category] || 0) + (parseFloat(r.Amount) || 0);
+            });
             
             if(myChart) myChart.destroy();
             myChart = new Chart(document.getElementById('categoryChart'), {
@@ -202,7 +197,7 @@
                             <p class="text-slate-900 font-bold text-sm truncate">${r.Item || 'Item'}</p>
                             <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">${r.Category} • ${r.Method}</p>
                         </div>
-                        <p class="text-blue-600 font-bold text-base">${parseFloat(r.Amount).toFixed(2)}</p>
+                        <p class="text-blue-600 font-bold text-base">${parseFloat(r.Amount || 0).toFixed(2)}</p>
                     </div>
                 </div>
             `).join('');
