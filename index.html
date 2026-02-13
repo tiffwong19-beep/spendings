@@ -8,14 +8,13 @@
     <script src="https://cdn.jsdelivr.net"></script>
     <style>
         @import url('https://fonts.googleapis.com');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8FAFC; padding-bottom: 110px; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8FAFC; padding-bottom: 100px; }
         .tab-active { color: #2563EB; border-top: 4px solid #2563EB; background: #EFF6FF; }
         .glass-card { background: white; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         .hidden { display: none !important; }
-        .tag { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; }
-        
-        #chart-container { position: relative; height: 180px; width: 100%; }
-        #chart-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -40%); text-align: center; pointer-events: none; width: 100%; }
+        .tag { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; white-space: normal; line-height: 1.2; }
+        #chart-wrapper { position: relative; height: 200px; width: 100%; }
+        #chart-center { position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -25,7 +24,6 @@
         <h1 class="text-2xl font-bold text-slate-800 mb-6 tracking-tight">Finance</h1>
         <div id="loading-state" class="text-slate-400 text-sm font-medium py-4">Loading records...</div>
         <div id="balances" class="space-y-3"></div>
-        
         <div id="rc-box" class="hidden mt-8 p-6 bg-slate-900 rounded-3xl text-white shadow-xl">
             <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Total RC Accumulated</p>
             <p id="total-rc" class="text-3xl font-bold mt-1 text-blue-400">0.00</p>
@@ -35,25 +33,24 @@
     <!-- SPENDINGS TAB -->
     <div id="spendings-tab" class="hidden p-5">
         <h1 class="text-2xl font-bold text-slate-800 mb-4 tracking-tight">Spendings</h1>
-        
-        <div class="grid grid-cols-2 gap-2 mb-3">
-            <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 font-semibold outline-none"><option value="">All Years</option></select>
-            <select id="f-month" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 font-semibold outline-none">
+        <div class="grid grid-cols-2 gap-2 mb-2">
+            <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Years</option></select>
+            <select id="f-month" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold">
                 <option value="">All Months</option>
                 <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
                 <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
                 <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
                 <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
             </select>
-            <select id="f-method" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 font-semibold outline-none"><option value="">All Methods</option></select>
-            <select id="f-cat" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 font-semibold outline-none"><option value="">All Categories</option></select>
+            <select id="f-method" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Methods</option></select>
+            <select id="f-cat" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Categories</option></select>
         </div>
 
-        <div class="glass-card rounded-3xl p-4 mb-3">
-            <div id="chart-container">
+        <div class="glass-card rounded-3xl p-4 mb-2">
+            <div id="chart-wrapper">
                 <canvas id="categoryDonutChart"></canvas>
                 <div id="chart-center">
-                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Total Spent</p>
+                    <p class="text-[9px] text-slate-400 font-bold uppercase">Total Spent</p>
                     <p id="center-total" class="text-base font-extrabold text-slate-800">$0.00</p>
                 </div>
             </div>
@@ -61,33 +58,28 @@
 
         <div class="grid grid-cols-2 gap-3 mb-6">
             <div class="bg-blue-600 p-4 rounded-2xl text-white shadow-md text-center">
-                <p class="text-[10px] uppercase font-bold opacity-70">Filtered RC</p>
+                <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">RC</p>
                 <p id="filter-rc" class="text-lg font-bold">0.00</p>
             </div>
             <div class="bg-slate-700 p-4 rounded-2xl text-white shadow-md text-center">
-                <p class="text-[10px] uppercase font-bold opacity-70">Cashback</p>
+                <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">Cashback</p>
                 <p id="filter-cb" class="text-lg font-bold">0.00</p>
             </div>
         </div>
 
-        <!-- The spending items will appear here -->
         <div id="spending-list" class="space-y-3"></div>
     </div>
 
-    <!-- NAVIGATION -->
+    <!-- NAV -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-20 z-50">
-        <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active">
-            <span class="text-[10px] font-bold uppercase tracking-wider">Finance</span>
-        </button>
-        <button onclick="switchTab('spendings')" id="nav-spe" class="flex flex-col items-center justify-center w-full h-full text-slate-400">
-            <span class="text-[10px] font-bold uppercase tracking-wider">Spendings</span>
-        </button>
+        <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active"><span class="text-[10px] font-bold uppercase tracking-wider">Finance</span></button>
+        <button onclick="switchTab('spendings')" id="nav-spe" class="flex flex-col items-center justify-center w-full h-full text-slate-400"><span class="text-[10px] font-bold uppercase tracking-wider">Spendings</span></button>
     </nav>
 
     <script>
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtkEIPYKbVmNChNnBCAiB1MG2KfxnBNhW1W-X7dkoTTOxmGu1TjgYIVjnZXPQMTHyU29dREXMPKA-f/pub?output=csv';
         
-        // --- EDIT DEFAULTS HERE ---
+        // --- USER CONFIGURATION ---
         const defaultBalances = {
             '🐙 Octopus': 0.00,
             '💳 HSBC Debit Card': 0.00,
@@ -97,7 +89,7 @@
             '💎 Alipay': 0.00,
             '📮 Payme': 0.00
         };
-        const defaultBaseRC = 0.00;
+        const defaultBaseRC = 0.00; 
         // --------------------------
 
         let allRecords = [];
@@ -126,21 +118,16 @@
             });
         }
 
-        function getYearFromTS(ts) { return ts ? ts.split('/')[0].trim() : null; }
-        function getMonthFromTS(ts) { return ts ? ts.split('/')[1]?.trim() : null; }
+        function getYear(ts) { return ts ? ts.split('/')[0].trim() : null; }
+        function getMonth(ts) { return ts ? ts.split('/')[1]?.trim() : null; }
 
         function initUI() {
-            const years = [...new Set(allRecords.map(r => getYearFromTS(r['時間戳記'])))].filter(y => y && y.length >= 4).sort((a,b) => b-a);
+            const years = [...new Set(allRecords.map(r => getYear(r['時間戳記'])))].filter(y => y && y.length >= 4).sort((a,b) => b-a);
             const cats = [...new Set(allRecords.map(r => r.Category))].filter(c => c);
-            
             document.getElementById('f-year').innerHTML += years.map(y => `<option value="${y}">${y}</option>`).join('');
             document.getElementById('f-cat').innerHTML += cats.map(c => `<option value="${c}">${c}</option>`).join('');
             document.getElementById('f-method').innerHTML += methodsList.map(m => `<option value="${m}">${m}</option>`).join('');
-
-            ['f-year', 'f-month', 'f-method', 'f-cat'].forEach(id => {
-                document.getElementById(id).addEventListener('change', renderSpendings);
-            });
-
+            ['f-year', 'f-month', 'f-method', 'f-cat'].forEach(id => document.getElementById(id).addEventListener('change', renderSpendings));
             renderFinance();
             renderSpendings();
         }
@@ -148,81 +135,38 @@
         function renderFinance() {
             const container = document.getElementById('balances');
             container.innerHTML = methodsList.map(m => {
-                let sum = defaultBalances[m];
-                sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
+                let sum = defaultBalances[m] + allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
                 if (m === '💳 HSBC Debit Card') sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0);
-                return `<div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card"><span class="text-slate-500 font-semibold text-xs uppercase tracking-wider">${m}</span><span class="text-slate-900 font-bold">$${sum.toFixed(2)}</span></div>`;
+                return `<div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card"><span class="text-slate-500 font-semibold text-xs uppercase">${m}</span><span class="text-slate-900 font-bold">$${sum.toFixed(2)}</span></div>`;
             }).join('');
             document.getElementById('total-rc').innerText = (defaultBaseRC + allRecords.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0)).toFixed(2);
         }
 
         function renderSpendings() {
-            const fy = document.getElementById('f-year').value;
-            const fm = document.getElementById('f-month').value;
-            const fme = document.getElementById('f-method').value;
-            const fc = document.getElementById('f-cat').value;
-
-            const filtered = allRecords.filter(r => {
-                const matchY = fy === "" || getYearFromTS(r['時間戳記']) === fy;
-                const matchM = fm === "" || getMonthFromTS(r['時間戳記']) === fm;
-                const matchMe = fme === "" || r.Method === fme;
-                const matchCa = fc === "" || r.Category === fc;
-                return matchY && matchM && matchMe && matchCa;
-            });
-
+            const fy = document.getElementById('f-year').value, fm = document.getElementById('f-month').value, fme = document.getElementById('f-method').value, fc = document.getElementById('f-cat').value;
+            const filtered = allRecords.filter(r => (!fy || getYear(r['時間戳記']) === fy) && (!fm || getMonth(r['時間戳記']) === fm) && (!fme || r.Method === fme) && (!fc || r.Category === fc));
+            
             const totalSpent = filtered.reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
             document.getElementById('filter-rc').innerText = filtered.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0).toFixed(2);
             document.getElementById('filter-cb').innerText = filtered.reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0).toFixed(2);
             document.getElementById('center-total').innerText = `$${totalSpent.toFixed(2)}`;
 
-            // Build list
-            document.getElementById('spending-list').innerHTML = filtered.slice().reverse().map(r => {
-                const emoji = r.Category ? [...r.Category][0] : '💰';
-                return `
-                <div class="bg-white p-3 rounded-2xl glass-card flex items-center gap-3">
-                    <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-slate-50 rounded-xl text-2xl">${emoji}</div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-start">
-                            <div class="min-w-0 flex-1">
-                                <h3 class="text-slate-900 font-bold text-sm leading-tight break-words">${r.Item || 'Untitled'}</h3>
-                                <div class="flex flex-wrap gap-1 mt-1">
-                                    <span class="tag bg-slate-100 text-slate-400 font-bold tracking-tight uppercase">${r['時間戳記']}</span>
-                                    <span class="tag bg-blue-50 text-blue-500 font-bold tracking-tight uppercase">${r.Method}</span>
-                                </div>
-                            </div>
-                            <div class="ml-2 text-right">
-                                <span class="text-blue-600 font-bold text-sm whitespace-nowrap">${r.Currency} ${parseFloat(r.Amount || 0).toFixed(2)}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
-
-            // Chart update
             const catData = {};
             filtered.forEach(r => { if(r.Category) catData[r.Category] = (catData[r.Category] || 0) + (parseFloat(r.Amount) || 0); });
             updateChart(catData);
+
+            document.getElementById('spending-list').innerHTML = filtered.slice().reverse().map(r => {
+                const emoji = r.Category ? [...r.Category][0] : '💰';
+                return `<div class="bg-white p-3 rounded-2xl glass-card flex items-center gap-3"><div class="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-slate-50 rounded-xl text-2xl">${emoji}</div><div class="flex-1 min-w-0"><div class="flex justify-between items-start"><div class="min-w-0 flex-1"><h3 class="text-slate-900 font-bold text-sm leading-tight break-words pr-1">${r.Item || 'Untitled'}</h3><div class="flex flex-wrap gap-1 mt-1.5"><span class="tag bg-slate-100 text-slate-500">${r['時間戳記']}</span><span class="tag bg-blue-50 text-blue-500">${r.Method}</span></div></div><div class="ml-2 text-right"><span class="text-blue-600 font-bold text-sm whitespace-nowrap">${r.Currency} ${parseFloat(r.Amount || 0).toFixed(2)}</span></div></div></div></div>`;
+            }).join('');
         }
 
         function updateChart(data) {
             const ctx = document.getElementById('categoryDonutChart').getContext('2d');
             if (donutChart) donutChart.destroy();
             donutChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(data),
-                    datasets: [{
-                        data: Object.values(data),
-                        backgroundColor: ['#2563EB', '#64748B', '#94A3B8', '#3B82F6', '#1E293B', '#CBD5E1', '#475569'],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    cutout: '85%',
-                    plugins: { legend: { display: false } },
-                    maintainAspectRatio: false,
-                    responsive: true
-                }
+                type: 'doughnut', data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#2563EB', '#64748B', '#94A3B8', '#3B82F6', '#1E293B', '#CBD5E1', '#475569'], borderWidth: 1 }] },
+                options: { cutout: '80%', plugins: { legend: { display: false } }, maintainAspectRatio: false, responsive: true }
             });
         }
 
@@ -231,6 +175,7 @@
             document.getElementById('spendings-tab').classList.toggle('hidden', tab !== 'spendings');
             document.getElementById('nav-fin').className = `flex flex-col items-center justify-center w-full h-full ${tab === 'finance' ? 'tab-active' : 'text-slate-400'}`;
             document.getElementById('nav-spe').className = `flex flex-col items-center justify-center w-full h-full ${tab === 'spendings' ? 'tab-active' : 'text-slate-400'}`;
+            if (tab === 'spendings') renderSpendings(); // Re-render ensures chart sizes correctly when tab becomes visible
         }
 
         loadData();
