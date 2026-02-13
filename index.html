@@ -7,51 +7,55 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8FAFC; padding-bottom: 90px; }
-        .tab-active { color: #2563EB; border-top: 3px solid #2563EB; background: #EFF6FF; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8FAFC; padding-bottom: 100px; }
+        .tab-active { color: #2563EB; border-top: 4px solid #2563EB; background: #EFF6FF; }
         .glass-card { background: white; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         .hidden { display: none !important; }
+        /* Smooth transition for tab switching */
+        .tab-content { transition: opacity 0.2s ease-in-out; }
     </style>
 </head>
 <body>
 
     <!-- FINANCE TAB -->
-    <div id="finance-tab" class="p-5">
-        <h1 class="text-2xl font-bold text-slate-800 mb-6">Finance</h1>
+    <div id="finance-tab" class="p-5 tab-content">
+        <h1 class="text-2xl font-bold text-slate-800 mb-6 tracking-tight">Finance</h1>
         <div id="loading-state" class="text-slate-400 text-sm font-medium py-4">Loading records...</div>
         <div id="balances" class="space-y-3"></div>
         
-        <div id="rc-box" class="hidden mt-8 p-6 bg-slate-800 rounded-3xl text-white shadow-xl">
-            <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Total RC Accumulated</p>
+        <div id="rc-box" class="hidden mt-8 p-6 bg-slate-900 rounded-3xl text-white shadow-xl">
+            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Total RC Accumulated</p>
             <p id="total-rc" class="text-3xl font-bold mt-1 text-blue-400">0.00</p>
         </div>
     </div>
 
     <!-- SPENDINGS TAB -->
-    <div id="spendings-tab" class="hidden p-5">
-        <h1 class="text-2xl font-bold text-slate-800 mb-4">Spendings</h1>
+    <div id="spendings-tab" class="hidden p-5 tab-content">
+        <h1 class="text-2xl font-bold text-slate-800 mb-4 tracking-tight">Spendings</h1>
         
+        <!-- Filter Bar -->
         <div class="grid grid-cols-2 gap-2 mb-6">
-            <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none"><option value="">All Years</option></select>
-            <select id="f-month" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none">
+            <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none appearance-none font-semibold"><option value="">All Years</option></select>
+            <select id="f-month" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none appearance-none font-semibold">
                 <option value="">All Months</option>
                 <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
                 <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
                 <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
                 <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
             </select>
-            <select id="f-method" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none"><option value="">All Methods</option></select>
-            <select id="f-cat" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none"><option value="">All Categories</option></select>
+            <select id="f-method" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none appearance-none font-semibold"><option value="">All Methods</option></select>
+            <select id="f-cat" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none appearance-none font-semibold"><option value="">All Categories</option></select>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 mb-6">
-            <div class="bg-blue-600 p-4 rounded-2xl text-white shadow-md text-center">
-                <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">RC</p>
-                <p id="filter-rc" class="text-xl font-bold">0.00</p>
+        <!-- RC & Cashback Summary -->
+        <div class="grid grid-cols-2 gap-3 mb-8">
+            <div class="bg-blue-600 p-4 rounded-2xl text-white shadow-md">
+                <p class="text-[10px] uppercase font-bold opacity-70">Filtered RC</p>
+                <p id="filter-rc" class="text-lg font-bold">0.00</p>
             </div>
-            <div class="bg-slate-700 p-4 rounded-2xl text-white shadow-md text-center">
-                <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">Cashback</p>
-                <p id="filter-cb" class="text-xl font-bold">0.00</p>
+            <div class="bg-slate-700 p-4 rounded-2xl text-white shadow-md">
+                <p class="text-[10px] uppercase font-bold opacity-70">Cashback</p>
+                <p id="filter-cb" class="text-lg font-bold">0.00</p>
             </div>
         </div>
 
@@ -60,11 +64,11 @@
 
     <!-- NAVIGATION -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-20 z-50">
-        <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active transition-all">
-            <span class="text-xs font-bold">Finance</span>
+        <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active">
+            <span class="text-[10px] font-bold uppercase tracking-wider">Finance</span>
         </button>
-        <button onclick="switchTab('spendings')" id="nav-spe" class="flex flex-col items-center justify-center w-full h-full text-slate-400 transition-all">
-            <span class="text-xs font-bold">Spendings</span>
+        <button onclick="switchTab('spendings')" id="nav-spe" class="flex flex-col items-center justify-center w-full h-full text-slate-400">
+            <span class="text-[10px] font-bold uppercase tracking-wider">Spendings</span>
         </button>
     </nav>
 
@@ -82,7 +86,7 @@
                 document.getElementById('rc-box').classList.remove('hidden');
                 initUI();
             } catch (e) { 
-                document.getElementById('loading-state').innerText = "Fetch error. Check CSV link.";
+                document.getElementById('loading-state').innerText = "Fetch failed.";
             }
         }
 
@@ -92,26 +96,26 @@
             return lines.slice(1).map(line => {
                 const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
                 let obj = {};
-                headers.forEach((h, i) => obj[h] = values[i]);
+                headers.forEach((h, i) => obj[h] = values[i] || "");
                 return obj;
             });
         }
 
-        // Improved Extractors using Regex for "2026/2/11 上午"
+        // Improved Extractors for the 2026/2/11 上午 format
         function getYearFromTS(ts) {
             if (!ts) return null;
-            const match = ts.match(/^(\d{4})/);
-            return match ? match[1] : null;
+            const parts = ts.split('/');
+            return parts[0] ? parts[0].trim() : null;
         }
 
         function getMonthFromTS(ts) {
             if (!ts) return null;
-            const match = ts.match(/^\d{4}\/(\d{1,2})/);
-            return match ? match[1] : null;
+            const parts = ts.split('/');
+            return parts[1] ? parts[1].trim() : null;
         }
 
         function initUI() {
-            const years = [...new Set(allRecords.map(r => getYearFromTS(r['時間戳記'])))].filter(y => y).sort((a,b) => b-a);
+            const years = [...new Set(allRecords.map(r => getYearFromTS(r['時間戳記'])))].filter(y => y && y.length >= 4).sort((a,b) => b-a);
             const cats = [...new Set(allRecords.map(r => r.Category))].filter(c => c);
             
             document.getElementById('f-year').innerHTML += years.map(y => `<option value="${y}">${y}</option>`).join('');
@@ -134,8 +138,8 @@
                     sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0);
                 }
                 return `<div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card">
-                        <span class="text-slate-500 font-semibold text-xs uppercase">${m}</span>
-                        <span class="text-slate-900 font-bold">${sum.toFixed(2)}</span>
+                        <span class="text-slate-500 font-semibold text-xs uppercase tracking-wider">${m}</span>
+                        <span class="text-slate-900 font-bold">$${sum.toFixed(2)}</span>
                     </div>`;
             }).join('');
             const totalRC = allRecords.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0);
@@ -149,27 +153,46 @@
             const fc = document.getElementById('f-cat').value;
 
             const filtered = allRecords.filter(r => {
-                const matchY = !fy || getYearFromTS(r['時間戳記']) === fy;
-                const matchM = !fm || getMonthFromTS(r['時間戳記']) === fm;
-                const matchMe = !fme || r.Method === fme;
-                const matchCa = !fc || r.Category === fc;
+                const matchY = fy === "" || getYearFromTS(r['時間戳記']) === fy;
+                const matchM = fm === "" || getMonthFromTS(r['時間戳記']) === fm;
+                const matchMe = fme === "" || r.Method === fme;
+                const matchCa = fc === "" || r.Category === fc;
                 return matchY && matchM && matchMe && matchCa;
             });
 
             document.getElementById('filter-rc').innerText = filtered.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0).toFixed(2);
             document.getElementById('filter-cb').innerText = filtered.reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0).toFixed(2);
 
-            document.getElementById('spending-list').innerHTML = filtered.reverse().map(r => `
-                <div class="bg-white p-4 rounded-2xl glass-card">
-                    <div class="flex justify-between items-center">
-                        <div class="max-w-[70%]">
-                            <p class="text-slate-900 font-bold text-sm truncate">${r.Item || 'Item'}</p>
-                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">${r.Category} • ${r.Method}</p>
-                        </div>
-                        <p class="text-blue-600 font-bold text-base">${parseFloat(r.Amount || 0).toFixed(2)}</p>
+            document.getElementById('spending-list').innerHTML = filtered.reverse().map(r => {
+                // Get first character of category (emoji)
+                const categoryEmoji = r.Category ? [...r.Category][0] : '💰';
+                
+                return `
+                <div class="bg-white p-3 rounded-2xl glass-card flex items-center gap-4">
+                    <!-- Emoji Thumbnail -->
+                    <div class="w-12 h-12 flex items-center justify-center bg-slate-50 rounded-xl text-2xl">
+                        ${categoryEmoji}
                     </div>
-                </div>
-            `).join('');
+                    
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-slate-900 font-bold text-sm truncate pr-2">${r.Item || 'Untitled'}</h3>
+                            <span class="text-blue-600 font-bold text-sm whitespace-nowrap">
+                                ${r.Currency || '$'} ${parseFloat(r.Amount || 0).toFixed(2)}
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[10px] font-bold uppercase tracking-tight">
+                                ${r.Method}
+                            </span>
+                            <span class="text-slate-300 text-[10px]">•</span>
+                            <span class="text-slate-400 text-[10px] font-medium">
+                                ${r.Category}
+                            </span>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
         }
 
         function switchTab(tab) {
@@ -177,6 +200,8 @@
             document.getElementById('spendings-tab').classList.toggle('hidden', tab !== 'spendings');
             document.getElementById('nav-fin').classList.toggle('tab-active', tab === 'finance');
             document.getElementById('nav-spe').classList.toggle('tab-active', tab === 'spendings');
+            document.getElementById('nav-fin').classList.toggle('text-slate-400', tab !== 'finance');
+            document.getElementById('nav-spe').classList.toggle('text-slate-400', tab !== 'spendings');
         }
 
         loadData();
