@@ -20,14 +20,22 @@
     <div id="finance-tab" class="p-5">
         <h1 class="text-2xl font-bold text-slate-800 mb-6 tracking-tight">Finance</h1>
         <div id="loading-state" class="text-slate-400 text-sm font-medium py-4">Loading records...</div>
+        
+        <!-- Current Balance Summary Box -->
+        <div id="balance-summary-box" class="hidden bg-white p-5 rounded-2xl glass-card mb-6 text-center border-l-4 border-blue-600">
+            <p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Current Balance</p>
+            <p id="total-net-balance" class="text-3xl font-extrabold text-slate-800">$0.00</p>
+        </div>
+
         <div id="balances" class="space-y-3"></div>
+        
         <div id="rc-box" class="hidden mt-8 p-6 bg-slate-900 rounded-3xl text-white shadow-xl">
             <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Total RC Accumulated</p>
             <p id="total-rc" class="text-3xl font-bold mt-1 text-blue-400">0.00</p>
         </div>
     </div>
 
-    <!-- DATA TAB -->
+    <!-- DATA TAB (Shared for Spendings/Earnings) -->
     <div id="data-tab" class="hidden p-5">
         <h1 id="tab-title" class="text-2xl font-bold text-slate-800 mb-4 tracking-tight text-center">Spendings</h1>
         <div class="grid grid-cols-2 gap-2 mb-2">
@@ -62,7 +70,7 @@
         <div id="record-list" class="space-y-3"></div>
     </div>
 
-    <!-- NAV -->
+    <!-- NAVIGATION -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-20 z-50">
         <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active">
             <span class="text-[10px] font-bold uppercase tracking-wider">Finance</span>
@@ -78,7 +86,7 @@
     <script>
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtkEIPYKbVmNChNnBCAiB1MG2KfxnBNhW1W-X7dkoTTOxmGu1TjgYIVjnZXPQMTHyU29dREXMPKA-f/pub?output=csv';
         
-        // --- DEFAULTS ---
+        // --- USER CONFIGURATION ---
         const defaultBalances = {
             '🐙 Octopus': 0.00,
             '💳 HSBC Debit Card': 0.00,
@@ -88,32 +96,28 @@
             '💎 Alipay': 0.00,
             '📮 Payme': 0.00
         };
-        const defaultBaseRC = 0.00;
-        // ----------------
+        const defaultBaseRC = 0.00; 
+        // --------------------------
 
         let allRecords = [];
         let currentMode = 'spendings'; 
         const methodsList = Object.keys(defaultBalances);
 
-        // YOUR REQUESTED LOADING METHOD
         async function loadData() {
             try {
                 const response = await fetch(CSV_URL);
                 const csvText = await response.text();
                 allRecords = parseCSV(csvText).filter(r => r['時間戳記'] && r['時間戳記'].trim() !== "");
-                
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('rc-box').classList.remove('hidden');
+                document.getElementById('balance-summary-box').classList.remove('hidden');
                 initUI();
-            } catch (e) { 
-                console.error(e); 
-                document.getElementById('loading-state').innerText = "Load failed.";
-            }
+            } catch (e) { document.getElementById('loading-state').innerText = "Load failed."; }
         }
 
         function parseCSV(text) {
             const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
-            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            const headers = lines.split(',').map(h => h.trim().replace(/"/g, ''));
             return lines.slice(1).map(line => {
                 const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
                 let obj = {};
@@ -122,8 +126,8 @@
             });
         }
 
-        function getYear(ts) { return ts ? ts.split('/')[0].trim() : null; }
-        function getMonth(ts) { return ts ? ts.split('/')[1]?.trim() : null; }
+        function getYear(ts) { return ts ? ts.split('/').trim() : null; }
+        function getMonth(ts) { return ts ? ts.split('/')?.trim() : null; }
 
         function initUI() {
             const years = [...new Set(allRecords.map(r => getYear(r['時間戳記'])))].filter(y => y && y.length >= 4).sort((a,b) => b-a);
@@ -138,11 +142,20 @@
 
         function renderFinance() {
             const container = document.getElementById('balances');
+            let grandTotal = 0;
+
             container.innerHTML = methodsList.map(m => {
                 let sum = defaultBalances[m] + allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
                 if (m === '💳 HSBC Debit Card') sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0);
-                return `<div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card"><span class="text-slate-500 font-semibold text-xs uppercase">${m}</span><span class="text-slate-900 font-bold">$${sum.toFixed(2)}</span></div>`;
+                
+                grandTotal += sum;
+                return `<div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card">
+                        <span class="text-slate-500 font-semibold text-xs uppercase tracking-wider">${m}</span>
+                        <span class="text-slate-900 font-bold">$${sum.toFixed(2)}</span>
+                    </div>`;
             }).join('');
+            
+            document.getElementById('total-net-balance').innerText = `$${grandTotal.toFixed(2)}`;
             document.getElementById('total-rc').innerText = (defaultBaseRC + allRecords.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0)).toFixed(2);
         }
 
@@ -172,15 +185,15 @@
             }
 
             document.getElementById('record-list').innerHTML = filtered.slice().reverse().map(r => {
-                const emoji = r.Category ? [...r.Category][0] : '💰';
+                const emoji = r.Category ? [...r.Category] : '💰';
                 return `<div class="bg-white p-3 rounded-2xl glass-card flex items-center gap-3">
                     <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-slate-50 rounded-xl text-2xl">${emoji}</div>
                     <div class="flex-1 min-w-0">
                         <div class="flex justify-between items-start">
                             <div class="min-w-0 flex-1">
-                                <h3 class="text-slate-900 font-bold text-sm leading-tight break-words">${r.Item || 'Untitled'}</h3>
+                                <h3 class="text-slate-900 font-bold text-sm leading-tight break-words pr-1">${r.Item || 'Untitled'}</h3>
                                 <div class="flex flex-wrap gap-1 mt-1.5">
-                                    <span class="tag bg-slate-100 text-slate-400">${r['時間戳記']}</span>
+                                    <span class="tag bg-slate-100 text-slate-500">${r['時間戳記']}</span>
                                     <span class="tag bg-blue-50 text-blue-500">${r.Method}</span>
                                 </div>
                             </div>
