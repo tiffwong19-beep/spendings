@@ -53,17 +53,17 @@
             <select id="f-cat" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Categories</option></select>
         </div>
 
-        <div class="bg-white p-4 rounded-2xl glass-card mb-2 text-center border-l-4 border-blue-600">
+        <div class="bg-white p-3 rounded-2xl glass-card mb-2 text-center border-l-4 border-blue-600">
             <p id="total-label" class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Total Spent</p>
             <p id="total-filtered" class="text-2xl font-extrabold text-slate-800">$0.00</p>
         </div>
 
         <div id="reward-summary-row" class="grid grid-cols-2 gap-3 mb-4">
-            <div class="bg-blue-600 p-4 rounded-2xl text-white shadow-md text-center">
+            <div class="bg-blue-600 p-3 rounded-2xl text-white shadow-md text-center">
                 <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">RC</p>
                 <p id="filter-rc" class="text-lg font-bold">0.00</p>
             </div>
-            <div class="bg-slate-700 p-4 rounded-2xl text-white shadow-md text-center">
+            <div class="bg-slate-700 p-3 rounded-2xl text-white shadow-md text-center">
                 <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">Cashback</p>
                 <p id="filter-cb" class="text-lg font-bold">0.00</p>
             </div>
@@ -179,8 +179,8 @@
                 }
                 
                 grandTotal += sum;
-                return `<div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card">
-                        <span class="text-slate-500 font-semibold text-xs uppercase tracking-wider">${m}</span>
+                return `<div class="bg-white p-2 rounded-2xl flex justify-between items-center glass-card">
+                        <span class="text-slate-500 font-semibold text-s uppercase tracking-wider">${m}</span>
                         <span class="text-slate-900 font-bold">$${sum.toFixed(2)}</span>
                     </div>`;
             }).join('');
@@ -217,7 +217,7 @@
 
             document.getElementById('record-list').innerHTML = filtered.slice().reverse().map(r => {
                 const emoji = r.Category ? [...r.Category][0] : '💰';
-                return `<div class="bg-white p-3 rounded-2xl glass-card flex items-center gap-3">
+                return `<div class="bg-white p-2 rounded-2xl glass-card flex items-center gap-3">
                     <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-slate-50 rounded-xl text-2xl">${emoji}</div>
                     <div class="flex-1 min-w-0">
                         <div class="flex justify-between items-start">
