@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Finance Tracker 2026</title>
+    <title>Finance Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net"></script>
     <style>
         @import url('https://fonts.googleapis.com');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8FAFC; padding-bottom: 100px; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8FAFC; padding-bottom: 110px; }
         .tab-active { color: #2563EB; border-top: 4px solid #2563EB; background: #EFF6FF; }
         .glass-card { background: white; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         .hidden { display: none !important; }
-        .tag { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; white-space: normal; }
-        /* Chart container styling */
-        #chart-wrapper { position: relative; width: 100%; height: 220px; margin-bottom: 12px; }
-        #chart-center-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+        .tag { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; }
+        
+        /* Fixed Chart Container */
+        #chart-container { position: relative; height: 200px; width: 100%; margin-bottom: 12px; }
+        #chart-center { position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; width: 100%; }
     </style>
 </head>
 <body>
@@ -36,50 +37,53 @@
     <div id="spendings-tab" class="hidden p-5">
         <h1 class="text-2xl font-bold text-slate-800 mb-4 tracking-tight">Spendings</h1>
         
-        <!-- Filter Bar -->
-        <div class="grid grid-cols-2 gap-2 mb-2">
-            <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Years</option></select>
-            <select id="f-month" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold">
+        <!-- Filters -->
+        <div class="grid grid-cols-2 gap-2 mb-3">
+            <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 font-semibold outline-none"><option value="">All Years</option></select>
+            <select id="f-month" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 font-semibold outline-none">
                 <option value="">All Months</option>
                 <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
                 <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
                 <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
                 <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
             </select>
-            <select id="f-method" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Methods</option></select>
-            <select id="f-cat" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Categories</option></select>
+            <select id="f-method" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 font-semibold outline-none"><option value="">All Methods</option></select>
+            <select id="f-cat" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 font-semibold outline-none"><option value="">All Categories</option></select>
         </div>
 
-        <!-- Donut Chart Section -->
-        <div id="chart-wrapper" class="glass-card rounded-3xl p-4 flex items-center justify-center">
-            <canvas id="categoryDonutChart"></canvas>
-            <div id="chart-center-text">
-                <p class="text-[10px] text-slate-400 font-bold uppercase">Total</p>
-                <p id="center-total" class="text-lg font-extrabold text-slate-800">$0.00</p>
+        <!-- Donut Chart -->
+        <div class="glass-card rounded-3xl p-4 mb-3">
+            <div id="chart-container">
+                <canvas id="categoryDonutChart"></canvas>
+                <div id="chart-center">
+                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Total Spent</p>
+                    <p id="center-total" class="text-lg font-extrabold text-slate-800">$0.00</p>
+                </div>
             </div>
         </div>
 
-        <!-- RC & Cashback Summary -->
+        <!-- Summary Boxes -->
         <div class="grid grid-cols-2 gap-3 mb-6">
             <div class="bg-blue-600 p-4 rounded-2xl text-white shadow-md text-center">
-                <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">RC</p>
+                <p class="text-[10px] uppercase font-bold opacity-70">Filtered RC</p>
                 <p id="filter-rc" class="text-lg font-bold">0.00</p>
             </div>
             <div class="bg-slate-700 p-4 rounded-2xl text-white shadow-md text-center">
-                <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">Cashback</p>
+                <p class="text-[10px] uppercase font-bold opacity-70">Cashback</p>
                 <p id="filter-cb" class="text-lg font-bold">0.00</p>
             </div>
         </div>
 
+        <!-- Item List -->
         <div id="spending-list" class="space-y-3"></div>
     </div>
 
-    <!-- NAVIGATION -->
+    <!-- NAV -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-20 z-50">
-        <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active transition-all">
+        <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active">
             <span class="text-[10px] font-bold uppercase tracking-wider">Finance</span>
         </button>
-        <button onclick="switchTab('spendings')" id="nav-spe" class="flex flex-col items-center justify-center w-full h-full text-slate-400 transition-all">
+        <button onclick="switchTab('spendings')" id="nav-spe" class="flex flex-col items-center justify-center w-full h-full text-slate-400">
             <span class="text-[10px] font-bold uppercase tracking-wider">Spendings</span>
         </button>
     </nav>
@@ -87,7 +91,7 @@
     <script>
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtkEIPYKbVmNChNnBCAiB1MG2KfxnBNhW1W-X7dkoTTOxmGu1TjgYIVjnZXPQMTHyU29dREXMPKA-f/pub?output=csv';
         
-        // --- DEFINE YOUR DEFAULT VALUES HERE ---
+        // --- DEFAULTS ---
         const defaultBalances = {
             '🐙 Octopus': 48.70,
             '💳 HSBC Debit Card': 0.00,
@@ -97,9 +101,8 @@
             '💎 Alipay': 0.00,
             '📮 Payme': 0.00
         };
-
-        const defaultBaseRC = 1.00; // Define your starting RewardCash balance here
-        // ----------------------------------------
+        const defaultBaseRC = 1.00;
+        // ----------------
 
         let allRecords = [];
         let donutChart = null;
@@ -146,14 +149,10 @@
             container.innerHTML = methodsList.map(m => {
                 let sum = defaultBalances[m];
                 sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
-                if (m === '💳 HSBC Debit Card') {
-                    sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0);
-                }
+                if (m === '💳 HSBC Debit Card') sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0);
                 return `<div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card"><span class="text-slate-500 font-semibold text-xs uppercase">${m}</span><span class="text-slate-900 font-bold">$${sum.toFixed(2)}</span></div>`;
             }).join('');
-            
-            const totalRC = defaultBaseRC + allRecords.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0);
-            document.getElementById('total-rc').innerText = totalRC.toFixed(2);
+            document.getElementById('total-rc').innerText = (defaultBaseRC + allRecords.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0)).toFixed(2);
         }
 
         function renderSpendings() {
@@ -170,19 +169,13 @@
                 return matchY && matchM && matchMe && matchCa;
             });
 
-            const totalRC = filtered.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0);
-            const totalCB = filtered.reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0);
             const totalSpent = filtered.reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
-
-            document.getElementById('filter-rc').innerText = totalRC.toFixed(2);
-            document.getElementById('filter-cb').innerText = totalCB.toFixed(2);
+            document.getElementById('filter-rc').innerText = filtered.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0).toFixed(2);
+            document.getElementById('filter-cb').innerText = filtered.reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0).toFixed(2);
             document.getElementById('center-total').innerText = `$${totalSpent.toFixed(2)}`;
 
-            // Donut Chart Logic
             const catData = {};
-            filtered.forEach(r => {
-                if (r.Category) catData[r.Category] = (catData[r.Category] || 0) + (parseFloat(r.Amount) || 0);
-            });
+            filtered.forEach(r => { if(r.Category) catData[r.Category] = (catData[r.Category] || 0) + (parseFloat(r.Amount) || 0); });
 
             updateChart(catData);
 
@@ -196,7 +189,7 @@
                             <div class="min-w-0 flex-1">
                                 <h3 class="text-slate-900 font-bold text-sm leading-tight break-words">${r.Item || 'Untitled'}</h3>
                                 <div class="flex flex-wrap gap-1 mt-1">
-                                    <span class="tag bg-slate-100 text-slate-500">${r['時間戳記']}</span>
+                                    <span class="tag bg-slate-100 text-slate-400">${r['時間戳記']}</span>
                                     <span class="tag bg-blue-50 text-blue-500">${r.Method}</span>
                                 </div>
                             </div>
@@ -211,26 +204,23 @@
 
         function updateChart(data) {
             const ctx = document.getElementById('categoryDonutChart').getContext('2d');
-            const labels = Object.keys(data);
-            const values = Object.values(data);
-
             if (donutChart) donutChart.destroy();
-            
             donutChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: labels,
+                    labels: Object.keys(data),
                     datasets: [{
-                        data: values,
+                        data: Object.values(data),
                         backgroundColor: ['#2563EB', '#64748B', '#94A3B8', '#3B82F6', '#1E293B', '#CBD5E1', '#475569'],
                         borderWidth: 2,
                         hoverOffset: 4
                     }]
                 },
                 options: {
-                    cutout: '75%',
-                    plugins: { legend: { display: false }, tooltip: { enabled: true } },
-                    maintainAspectRatio: false
+                    cutout: '80%',
+                    plugins: { legend: { display: false } },
+                    maintainAspectRatio: false,
+                    responsive: true
                 }
             });
         }
