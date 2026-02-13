@@ -27,10 +27,9 @@
         </div>
     </div>
 
-    <!-- DATA TAB (Spendings / Earnings) -->
+    <!-- DATA TAB -->
     <div id="data-tab" class="hidden p-5">
         <h1 id="tab-title" class="text-2xl font-bold text-slate-800 mb-4 tracking-tight text-center">Spendings</h1>
-        
         <div class="grid grid-cols-2 gap-2 mb-2">
             <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Years</option></select>
             <select id="f-month" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold">
@@ -49,7 +48,6 @@
             <p id="total-filtered" class="text-2xl font-extrabold text-slate-800">$0.00</p>
         </div>
 
-        <!-- Reward Summary Row -->
         <div id="reward-summary-row" class="grid grid-cols-2 gap-3 mb-6">
             <div class="bg-blue-600 p-4 rounded-2xl text-white shadow-md text-center">
                 <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">RC</p>
@@ -64,7 +62,7 @@
         <div id="record-list" class="space-y-3"></div>
     </div>
 
-    <!-- NAVIGATION -->
+    <!-- NAV -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-20 z-50">
         <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active">
             <span class="text-[10px] font-bold uppercase tracking-wider">Finance</span>
@@ -80,6 +78,7 @@
     <script>
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtkEIPYKbVmNChNnBCAiB1MG2KfxnBNhW1W-X7dkoTTOxmGu1TjgYIVjnZXPQMTHyU29dREXMPKA-f/pub?output=csv';
         
+        // --- DEFAULTS ---
         const defaultBalances = {
             '🐙 Octopus': 0.00,
             '💳 HSBC Debit Card': 0.00,
@@ -90,27 +89,31 @@
             '📮 Payme': 0.00
         };
         const defaultBaseRC = 0.00;
+        // ----------------
 
         let allRecords = [];
         let currentMode = 'spendings'; 
         const methodsList = Object.keys(defaultBalances);
 
+        // YOUR REQUESTED LOADING METHOD
         async function loadData() {
             try {
                 const response = await fetch(CSV_URL);
                 const csvText = await response.text();
                 allRecords = parseCSV(csvText).filter(r => r['時間戳記'] && r['時間戳記'].trim() !== "");
+                
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('rc-box').classList.remove('hidden');
                 initUI();
             } catch (e) { 
+                console.error(e); 
                 document.getElementById('loading-state').innerText = "Load failed.";
             }
         }
 
         function parseCSV(text) {
             const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
-            const headers = lines.split(',').map(h => h.trim().replace(/"/g, ''));
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
             return lines.slice(1).map(line => {
                 const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
                 let obj = {};
@@ -119,8 +122,8 @@
             });
         }
 
-        function getYear(ts) { return ts ? ts.split('/').trim() : null; }
-        function getMonth(ts) { return ts ? ts.split('/')?.trim() : null; }
+        function getYear(ts) { return ts ? ts.split('/')[0].trim() : null; }
+        function getMonth(ts) { return ts ? ts.split('/')[1]?.trim() : null; }
 
         function initUI() {
             const years = [...new Set(allRecords.map(r => getYear(r['時間戳記'])))].filter(y => y && y.length >= 4).sort((a,b) => b-a);
@@ -151,9 +154,7 @@
 
             const filtered = allRecords.filter(r => {
                 const amt = parseFloat(r.Amount) || 0;
-                // EXCLUSION: Skip '🏧 Transfers' for Spendings/Earnings tabs
                 if (r.Category === '🏧 Transfers') return false;
-                
                 const matchType = currentMode === 'spendings' ? amt < 0 : amt > 0;
                 const matchY = fy === "" || getYear(r['時間戳記']) === fy;
                 const matchM = fm === "" || getMonth(r['時間戳記']) === fm;
@@ -171,7 +172,7 @@
             }
 
             document.getElementById('record-list').innerHTML = filtered.slice().reverse().map(r => {
-                const emoji = r.Category ? [...r.Category] : '💰';
+                const emoji = r.Category ? [...r.Category][0] : '💰';
                 return `<div class="bg-white p-3 rounded-2xl glass-card flex items-center gap-3">
                     <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-slate-50 rounded-xl text-2xl">${emoji}</div>
                     <div class="flex-1 min-w-0">
@@ -179,7 +180,7 @@
                             <div class="min-w-0 flex-1">
                                 <h3 class="text-slate-900 font-bold text-sm leading-tight break-words">${r.Item || 'Untitled'}</h3>
                                 <div class="flex flex-wrap gap-1 mt-1.5">
-                                    <span class="tag bg-slate-100 text-slate-500">${r['時間戳記']}</span>
+                                    <span class="tag bg-slate-100 text-slate-400">${r['時間戳記']}</span>
                                     <span class="tag bg-blue-50 text-blue-500">${r.Method}</span>
                                 </div>
                             </div>
