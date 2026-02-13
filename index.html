@@ -20,7 +20,7 @@
     <div id="finance-tab" class="p-5">
         <div id="loading-state" class="text-slate-400 text-sm font-medium py-4 text-center">Bulu Earning Money...</div>
         
-        <div id="balance-summary-box" class="hidden bg-white p-3 rounded-2xl glass-card mb-4 text-center border-l-4 border-blue-600">
+        <div id="balance-summary-box" class="hidden bg-white p-5 rounded-2xl glass-card mb-4 text-center border-l-4 border-blue-600">
             <p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Current Balance</p>
             <p id="total-net-balance" class="text-3xl font-extrabold text-slate-800">$0.00</p>
         </div>
@@ -28,19 +28,10 @@
         <div id="balances" class="space-y-1"></div>
         
         <div id="rc-box" class="hidden mt-4 p-4 bg-slate-900 rounded-3xl text-white shadow-xl">
-            <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-slate-50 rounded-xl text-2xl">💸</div>
-            <div class="flex-1 min-w-0">
-                <div class="flex justify-between items-start">
-                    <div class="min-w-0 flex-1">
-                        <h3 class="text-slate-900 font-bold text-xm leading-tight break-words">Total RC Accumulated</h3>
-                    </div>
-                    <div class="ml-2 text-right">
-                        <span id="total-rc" class="text-3xl font-bold mt-1 text-blue-400">0.00</span>
-                    </div>
-
-                </div>
-            </div>
+            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Total RC Accumulated</p>
+            <p id="total-rc" class="text-3xl font-bold mt-1 text-blue-400">0.00</p>
         </div>
+    </div>
 
     <!-- DATA TAB -->
     <div id="data-tab" class="hidden p-5">
@@ -78,7 +69,7 @@
     </div>
 
     <!-- NAVIGATION -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-15 z-50">
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-20 z-50">
         <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active">
             <span class="text-[10px] font-bold uppercase tracking-wider">Finance</span>
         </button>
