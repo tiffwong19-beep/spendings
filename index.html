@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en-HK">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -17,7 +17,7 @@
 <body>
 
     <!-- FINANCE TAB -->
-    <div id="finance-tab" class="p-5 tab-view">
+    <div id="finance-tab" class="p-5">
         <h1 class="text-2xl font-bold text-slate-800 mb-6 tracking-tight">Finance</h1>
         <div id="loading-state" class="text-slate-400 text-sm font-medium py-4">Loading records...</div>
         <div id="balances" class="space-y-3"></div>
@@ -27,11 +27,9 @@
         </div>
     </div>
 
-    <!-- SPENDINGS & EARNINGS TAB (Shared Structure) -->
-    <div id="data-tab" class="hidden p-5 tab-view">
-        <h1 id="tab-title" class="text-2xl font-bold text-slate-800 mb-4 tracking-tight text-center">Spendings</h1>
-        
-        <!-- Filters -->
+    <!-- DATA TAB (Shared for Spendings/Earnings) -->
+    <div id="data-tab" class="hidden p-5">
+        <h1 id="tab-title" class="text-2xl font-bold text-slate-800 mb-4 tracking-tight">Spendings</h1>
         <div class="grid grid-cols-2 gap-2 mb-2">
             <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Years</option></select>
             <select id="f-month" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold">
@@ -89,12 +87,13 @@
             '💎 Alipay': 0.00,
             '📮 Payme': 0.00
         };
-        const defaultBaseRC = 0.00; 
+        const defaultBaseRC = 0.00;
 
         let allRecords = [];
-        let currentMode = 'spendings'; // 'spendings' or 'earnings'
+        let currentView = 'spendings'; // Tracks Spendings vs Earnings view
         const methodsList = Object.keys(defaultBalances);
 
+        // YOUR REQUESTED LOADING LOGIC
         async function loadData() {
             try {
                 const response = await fetch(CSV_URL);
@@ -103,12 +102,15 @@
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('rc-box').classList.remove('hidden');
                 initUI();
-            } catch (e) { document.getElementById('loading-state').innerText = "Load failed."; }
+            } catch (e) { 
+                console.error(e); 
+                document.getElementById('loading-state').innerText = "Load failed.";
+            }
         }
 
         function parseCSV(text) {
             const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
-            const headers = lines.split(',').map(h => h.trim().replace(/"/g, ''));
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
             return lines.slice(1).map(line => {
                 const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
                 let obj = {};
@@ -126,11 +128,7 @@
             document.getElementById('f-year').innerHTML += years.map(y => `<option value="${y}">${y}</option>`).join('');
             document.getElementById('f-cat').innerHTML += cats.map(c => `<option value="${c}">${c}</option>`).join('');
             document.getElementById('f-method').innerHTML += methodsList.map(m => `<option value="${m}">${m}</option>`).join('');
-
-            ['f-year', 'f-month', 'f-method', 'f-cat'].forEach(id => {
-                document.getElementById(id).addEventListener('change', renderDataTab);
-            });
-
+            ['f-year', 'f-month', 'f-method', 'f-cat'].forEach(id => document.getElementById(id).addEventListener('change', renderDataTab));
             renderFinance();
             renderDataTab();
         }
@@ -140,10 +138,7 @@
             container.innerHTML = methodsList.map(m => {
                 let sum = defaultBalances[m] + allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
                 if (m === '💳 HSBC Debit Card') sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0);
-                return `<div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card">
-                        <span class="text-slate-500 font-semibold text-xs uppercase tracking-wider">${m}</span>
-                        <span class="text-slate-900 font-bold">$${sum.toFixed(2)}</span>
-                    </div>`;
+                return `<div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card"><span class="text-slate-500 font-semibold text-xs uppercase">${m}</span><span class="text-slate-900 font-bold">$${sum.toFixed(2)}</span></div>`;
             }).join('');
             document.getElementById('total-rc').innerText = (defaultBaseRC + allRecords.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0)).toFixed(2);
         }
@@ -156,12 +151,12 @@
 
             const filtered = allRecords.filter(r => {
                 const amt = parseFloat(r.Amount) || 0;
-                const modeMatch = currentMode === 'spendings' ? amt < 0 : amt > 0;
+                const matchType = currentView === 'spendings' ? amt < 0 : amt > 0;
                 const matchY = fy === "" || getYear(r['時間戳記']) === fy;
                 const matchM = fm === "" || getMonth(r['時間戳記']) === fm;
                 const matchMe = fme === "" || r.Method === fme;
                 const matchCa = fc === "" || r.Category === fc;
-                return modeMatch && matchY && matchM && matchMe && matchCa;
+                return matchType && matchY && matchM && matchMe && matchCa;
             });
 
             const total = filtered.reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
@@ -171,13 +166,12 @@
 
             document.getElementById('record-list').innerHTML = filtered.slice().reverse().map(r => {
                 const emoji = r.Category ? [...r.Category][0] : '💰';
-                return `
-                <div class="bg-white p-3 rounded-2xl glass-card flex items-center gap-3">
+                return `<div class="bg-white p-3 rounded-2xl glass-card flex items-center gap-3">
                     <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-slate-50 rounded-xl text-2xl">${emoji}</div>
                     <div class="flex-1 min-w-0">
                         <div class="flex justify-between items-start">
                             <div class="min-w-0 flex-1">
-                                <h3 class="text-slate-900 font-bold text-sm leading-tight break-words pr-1">${r.Item || 'Untitled'}</h3>
+                                <h3 class="text-slate-900 font-bold text-sm leading-tight break-words">${r.Item || 'Untitled'}</h3>
                                 <div class="flex flex-wrap gap-1 mt-1.5">
                                     <span class="tag bg-slate-100 text-slate-500">${r['時間戳記']}</span>
                                     <span class="tag bg-blue-50 text-blue-500">${r.Method}</span>
@@ -198,7 +192,7 @@
             document.getElementById('data-tab').classList.toggle('hidden', !isDataView);
             
             if (isDataView) {
-                currentMode = tab;
+                currentView = tab;
                 document.getElementById('tab-title').innerText = tab.charAt(0).toUpperCase() + tab.slice(1);
                 document.getElementById('total-label').innerText = tab === 'spendings' ? 'Total Spent' : 'Total Earned';
                 renderDataTab();
