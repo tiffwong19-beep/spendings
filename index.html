@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Finance Tracker 2026</title>
+    <title>Finance Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net"></script>
     <style>
@@ -20,12 +20,11 @@
     <div id="finance-tab" class="p-5">
         <h1 class="text-2xl font-bold text-slate-800 mb-6">Finance</h1>
         
-        <!-- Loading Indicator -->
-        <div id="loading-state" class="text-slate-400 text-sm font-medium">Loading records...</div>
+        <div id="loading-state" class="text-slate-400 text-sm font-medium py-4">Loading records...</div>
 
         <div id="balances" class="space-y-3"></div>
         
-        <!-- Total RC Box: Hidden by default -->
+        <!-- Total RC Box: Hidden during loading -->
         <div id="rc-box" class="hidden mt-8 p-6 bg-slate-800 rounded-3xl text-white shadow-xl">
             <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Total RC Accumulated</p>
             <p id="total-rc" class="text-3xl font-bold mt-1 text-blue-400">0.00</p>
@@ -37,31 +36,30 @@
         <h1 class="text-2xl font-bold text-slate-800 mb-4">Spendings</h1>
         
         <div class="grid grid-cols-2 gap-2 mb-6">
-            <!-- Year filter is now populated dynamically -->
             <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none"></select>
             <select id="f-month" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none">
-                <option value="1">January</option><option value="2">February</option><option value="3">March</option>
-                <option value="4">April</option><option value="5">May</option><option value="6">June</option>
-                <option value="7">July</option><option value="8">August</option><option value="9">September</option>
-                <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+                <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
+                <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
+                <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
+                <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
             </select>
-            <select id="f-method" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none"><option value="">All Methods</option></select>
-            <select id="f-cat" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none"><option value="">All Categories</option></select>
+            <select id="f-method" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none"><option value="">Method</option></select>
+            <select id="f-cat" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none"><option value="">Category</option></select>
         </div>
 
         <div class="bg-white p-4 rounded-3xl mb-6 glass-card flex justify-center">
-            <div style="width: 250px; height: 250px;">
+            <div style="width: 240px; height: 240px;">
                 <canvas id="categoryChart"></canvas>
             </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3 mb-6">
-            <div class="bg-blue-600 p-4 rounded-2xl text-white shadow-lg">
-                <p class="text-[10px] uppercase font-bold opacity-80">Filtered RC</p>
+            <div class="bg-blue-600 p-4 rounded-2xl text-white shadow-md text-center">
+                <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">Filtered RC</p>
                 <p id="filter-rc" class="text-xl font-bold">0.00</p>
             </div>
-            <div class="bg-slate-700 p-4 rounded-2xl text-white shadow-lg">
-                <p class="text-[10px] uppercase font-bold opacity-80">Cashback</p>
+            <div class="bg-slate-700 p-4 rounded-2xl text-white shadow-md text-center">
+                <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">Cashback</p>
                 <p id="filter-cb" class="text-xl font-bold">0.00</p>
             </div>
         </div>
@@ -70,7 +68,7 @@
     </div>
 
     <!-- NAVIGATION -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-200 flex justify-around items-center h-20 z-50">
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-20 z-50">
         <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active">
             <span class="text-xs font-bold">Finance</span>
         </button>
@@ -91,14 +89,12 @@
                 const csvText = await response.text();
                 allRecords = parseCSV(csvText);
                 
-                // Hide loading, show content
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('rc-box').classList.remove('hidden');
                 
                 initUI();
             } catch (e) { 
-                console.error(e); 
-                document.getElementById('loading-state').innerText = "Failed to load data.";
+                document.getElementById('loading-state').innerText = "Load Failed.";
             }
         }
 
@@ -113,34 +109,30 @@
             });
         }
 
-        // IMPROVED YEAR EXTRACTION: Specifically looks for 4-digit years in timestamp
-        function extractYear(ts) {
-            const match = ts.match(/\b(20\d{2})\b/);
-            return match ? match[1] : null;
+        // Robust Year/Month extractor for "2026/2/11 上午 8:09:00" format
+        function getYearFromTS(ts) {
+            if (!ts) return null;
+            return ts.split('/')[0].trim(); // Takes '2026'
         }
 
-        // IMPROVED MONTH EXTRACTION: Handles common formats (MM/DD or DD/MM)
-        function extractMonth(ts) {
-            const parts = ts.split(/[\/\-]/);
-            if (parts.length < 2) return null;
-            // Assumes standard sheet formats where month is 1st or 2nd part
-            let m = parseInt(parts[0]);
-            if (m > 12) m = parseInt(parts[1]); 
-            return m;
+        function getMonthFromTS(ts) {
+            if (!ts) return null;
+            return ts.split('/')[1].trim(); // Takes '2'
         }
 
         function initUI() {
-            // Build dynamic year list from data
-            const years = [...new Set(allRecords.map(r => extractYear(r['時間戳記'])))].filter(y => y).sort((a,b) => b-a);
+            const years = [...new Set(allRecords.map(r => getYearFromTS(r['時間戳記'])))].filter(y => y && y.length === 4).sort((a,b) => b-a);
             const cats = [...new Set(allRecords.map(r => r.Category))].filter(c => c);
             
-            const yearSelect = document.getElementById('f-year');
-            yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+            const ySel = document.getElementById('f-year');
+            ySel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
             
-            // Set default to 2026 if available, else most recent
-            if (years.includes("2026")) yearSelect.value = "2026";
+            // Auto-select 2026 if present
+            if (years.includes("2026")) ySel.value = "2026";
             
+            // Set to current month
             document.getElementById('f-month').value = new Date().getMonth() + 1;
+            
             document.getElementById('f-method').innerHTML += methods.map(m => `<option value="${m}">${m}</option>`).join('');
             document.getElementById('f-cat').innerHTML += cats.map(c => `<option value="${c}">${c}</option>`).join('');
 
@@ -161,8 +153,8 @@
                 }
                 return `
                     <div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card">
-                        <span class="text-slate-500 font-semibold text-sm">${m}</span>
-                        <span class="text-slate-900 font-bold">$${sum.toFixed(2)}</span>
+                        <span class="text-slate-500 font-semibold text-xs uppercase tracking-wider">${m}</span>
+                        <span class="text-slate-900 font-bold tracking-tight">${sum.toFixed(2)}</span>
                     </div>`;
             }).join('');
 
@@ -177,8 +169,8 @@
             const fc = document.getElementById('f-cat').value;
 
             const filtered = allRecords.filter(r => {
-                return extractYear(r['時間戳記']) == fy && 
-                       extractMonth(r['時間戳記']) == fm &&
+                return getYearFromTS(r['時間戳記']) === fy && 
+                       getMonthFromTS(r['時間戳記']) === fm &&
                        (!fme || r.Method === fme) && 
                        (!fc || r.Category === fc);
             });
@@ -200,17 +192,17 @@
                         borderWidth: 2
                     }]
                 },
-                options: { cutout: '70%', plugins: { legend: { display: false } }, maintainAspectRatio: false }
+                options: { cutout: '75%', plugins: { legend: { display: false } }, maintainAspectRatio: false }
             });
 
             document.getElementById('spending-list').innerHTML = filtered.reverse().map(r => `
                 <div class="bg-white p-4 rounded-2xl glass-card">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-slate-900 font-bold">${r.Item || 'Item'}</p>
-                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">${r.Category} • ${r.Method}</p>
+                    <div class="flex justify-between items-center">
+                        <div class="max-w-[70%]">
+                            <p class="text-slate-900 font-bold text-sm truncate">${r.Item || 'Item'}</p>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">${r.Category} • ${r.Method}</p>
                         </div>
-                        <p class="text-blue-600 font-bold text-lg">$${parseFloat(r.Amount).toFixed(2)}</p>
+                        <p class="text-blue-600 font-bold text-base">${parseFloat(r.Amount).toFixed(2)}</p>
                     </div>
                 </div>
             `).join('');
