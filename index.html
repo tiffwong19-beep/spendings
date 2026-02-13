@@ -11,14 +11,14 @@
         .tab-active { color: #2563EB; border-top: 4px solid #2563EB; background: #EFF6FF; }
         .glass-card { background: white; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         .hidden { display: none !important; }
-        /* Smooth transition for tab switching */
-        .tab-content { transition: opacity 0.2s ease-in-out; }
+        /* Style for the small pill tags */
+        .tag { padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; }
     </style>
 </head>
 <body>
 
     <!-- FINANCE TAB -->
-    <div id="finance-tab" class="p-5 tab-content">
+    <div id="finance-tab" class="p-5">
         <h1 class="text-2xl font-bold text-slate-800 mb-6 tracking-tight">Finance</h1>
         <div id="loading-state" class="text-slate-400 text-sm font-medium py-4">Loading records...</div>
         <div id="balances" class="space-y-3"></div>
@@ -30,36 +30,34 @@
     </div>
 
     <!-- SPENDINGS TAB -->
-    <div id="spendings-tab" class="hidden p-5 tab-content">
+    <div id="spendings-tab" class="hidden p-5">
         <h1 class="text-2xl font-bold text-slate-800 mb-4 tracking-tight">Spendings</h1>
         
-        <!-- Filter Bar -->
         <div class="grid grid-cols-2 gap-2 mb-6">
-            <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none appearance-none font-semibold"><option value="">All Years</option></select>
-            <select id="f-month" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none appearance-none font-semibold">
+            <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Years</option></select>
+            <select id="f-month" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold">
                 <option value="">All Months</option>
                 <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
                 <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
                 <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
                 <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
             </select>
-            <select id="f-method" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none appearance-none font-semibold"><option value="">All Methods</option></select>
-            <select id="f-cat" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none appearance-none font-semibold"><option value="">All Categories</option></select>
+            <select id="f-method" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Methods</option></select>
+            <select id="f-cat" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Categories</option></select>
         </div>
 
-        <!-- RC & Cashback Summary -->
         <div class="grid grid-cols-2 gap-3 mb-8">
             <div class="bg-blue-600 p-4 rounded-2xl text-white shadow-md">
-                <p class="text-[10px] uppercase font-bold opacity-70">Filtered RC</p>
+                <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">RC</p>
                 <p id="filter-rc" class="text-lg font-bold">0.00</p>
             </div>
             <div class="bg-slate-700 p-4 rounded-2xl text-white shadow-md">
-                <p class="text-[10px] uppercase font-bold opacity-70">Cashback</p>
+                <p class="text-[10px] uppercase font-bold opacity-70 tracking-tighter">Cashback</p>
                 <p id="filter-cb" class="text-lg font-bold">0.00</p>
             </div>
         </div>
 
-        <div id="spending-list" class="space-y-3"></div>
+        <div id="spending-list" class="space-y-4"></div>
     </div>
 
     <!-- NAVIGATION -->
@@ -75,19 +73,19 @@
     <script>
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtkEIPYKbVmNChNnBCAiB1MG2KfxnBNhW1W-X7dkoTTOxmGu1TjgYIVjnZXPQMTHyU29dREXMPKA-f/pub?output=csv';
         let allRecords = [];
-        const methods = ['🐙 Octopus','💳 HSBC Debit Card','🧰 HSBC Red Card','⚔️ SCB','💵 Cash','💎 Alipay','📮 Payme'];
+        const methodsList = ['🐙 Octopus','💳 HSBC Debit Card','🧰 HSBC Red Card','⚔️ SCB','💵 Cash','💎 Alipay','📮 Payme'];
 
         async function loadData() {
             try {
                 const response = await fetch(CSV_URL);
                 const csvText = await response.text();
-                allRecords = parseCSV(csvText);
+                // Filter out null/empty timestamps immediately
+                allRecords = parseCSV(csvText).filter(r => r['時間戳記'] && r['時間戳記'].trim() !== "");
+                
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('rc-box').classList.remove('hidden');
                 initUI();
-            } catch (e) { 
-                document.getElementById('loading-state').innerText = "Fetch failed.";
-            }
+            } catch (e) { document.getElementById('loading-state').innerText = "Load failed. Check CSV URL."; }
         }
 
         function parseCSV(text) {
@@ -101,17 +99,14 @@
             });
         }
 
-        // Improved Extractors for the 2026/2/11 上午 format
         function getYearFromTS(ts) {
             if (!ts) return null;
-            const parts = ts.split('/');
-            return parts[0] ? parts[0].trim() : null;
+            return ts.split('/')[0].trim();
         }
 
         function getMonthFromTS(ts) {
             if (!ts) return null;
-            const parts = ts.split('/');
-            return parts[1] ? parts[1].trim() : null;
+            return ts.split('/')[1]?.trim();
         }
 
         function initUI() {
@@ -120,7 +115,7 @@
             
             document.getElementById('f-year').innerHTML += years.map(y => `<option value="${y}">${y}</option>`).join('');
             document.getElementById('f-cat').innerHTML += cats.map(c => `<option value="${c}">${c}</option>`).join('');
-            document.getElementById('f-method').innerHTML += methods.map(m => `<option value="${m}">${m}</option>`).join('');
+            document.getElementById('f-method').innerHTML += methodsList.map(m => `<option value="${m}">${m}</option>`).join('');
 
             ['f-year', 'f-month', 'f-method', 'f-cat'].forEach(id => {
                 document.getElementById(id).addEventListener('change', renderSpendings);
@@ -132,7 +127,7 @@
 
         function renderFinance() {
             const container = document.getElementById('balances');
-            container.innerHTML = methods.map(m => {
+            container.innerHTML = methodsList.map(m => {
                 let sum = allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
                 if (m === '💳 HSBC Debit Card') {
                     sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0);
@@ -164,31 +159,35 @@
             document.getElementById('filter-cb').innerText = filtered.reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0).toFixed(2);
 
             document.getElementById('spending-list').innerHTML = filtered.reverse().map(r => {
-                // Get first character of category (emoji)
-                const categoryEmoji = r.Category ? [...r.Category][0] : '💰';
+                // Get emoji from Category
+                const emoji = r.Category ? [...r.Category][0] : '💰';
+                // Simplify timestamp for the tag (e.g., 2026/2/11)
+                const dateTag = r['時間戳記'].split(' ')[0];
                 
                 return `
-                <div class="bg-white p-3 rounded-2xl glass-card flex items-center gap-4">
+                <div class="bg-white p-4 rounded-2xl glass-card flex items-start gap-4">
                     <!-- Emoji Thumbnail -->
-                    <div class="w-12 h-12 flex items-center justify-center bg-slate-50 rounded-xl text-2xl">
-                        ${categoryEmoji}
+                    <div class="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-slate-50 rounded-2xl text-3xl shadow-inner">
+                        ${emoji}
                     </div>
                     
                     <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-start">
-                            <h3 class="text-slate-900 font-bold text-sm truncate pr-2">${r.Item || 'Untitled'}</h3>
-                            <span class="text-blue-600 font-bold text-sm whitespace-nowrap">
-                                ${r.Currency || '$'} ${parseFloat(r.Amount || 0).toFixed(2)}
-                            </span>
-                        </div>
-                        <div class="flex items-center gap-2 mt-1">
-                            <span class="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[10px] font-bold uppercase tracking-tight">
-                                ${r.Method}
-                            </span>
-                            <span class="text-slate-300 text-[10px]">•</span>
-                            <span class="text-slate-400 text-[10px] font-medium">
-                                ${r.Category}
-                            </span>
+                        <div class="flex flex-col gap-1">
+                            <!-- Item Name -->
+                            <h3 class="text-slate-900 font-bold text-sm truncate">${r.Item || 'Untitled'}</h3>
+                            
+                            <!-- Tags Row -->
+                            <div class="flex flex-wrap gap-2 items-center">
+                                <span class="tag bg-slate-100 text-slate-500">${dateTag}</span>
+                                <span class="tag bg-blue-50 text-blue-500">${r.Method}</span>
+                            </div>
+
+                            <!-- Value Display Below -->
+                            <div class="mt-1">
+                                <span class="text-blue-700 font-extrabold text-base tracking-tight">
+                                    ${r.Currency} ${parseFloat(r.Amount || 0).toFixed(2)}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>`;
@@ -198,10 +197,8 @@
         function switchTab(tab) {
             document.getElementById('finance-tab').classList.toggle('hidden', tab !== 'finance');
             document.getElementById('spendings-tab').classList.toggle('hidden', tab !== 'spendings');
-            document.getElementById('nav-fin').classList.toggle('tab-active', tab === 'finance');
-            document.getElementById('nav-spe').classList.toggle('tab-active', tab === 'spendings');
-            document.getElementById('nav-fin').classList.toggle('text-slate-400', tab !== 'finance');
-            document.getElementById('nav-spe').classList.toggle('text-slate-400', tab !== 'spendings');
+            document.getElementById('nav-fin').className = `flex flex-col items-center justify-center w-full h-full ${tab === 'finance' ? 'tab-active' : 'text-slate-400'}`;
+            document.getElementById('nav-spe').className = `flex flex-col items-center justify-center w-full h-full ${tab === 'spendings' ? 'tab-active' : 'text-slate-400'}`;
         }
 
         loadData();
