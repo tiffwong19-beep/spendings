@@ -11,8 +11,7 @@
         .tab-active { color: #2563EB; border-top: 4px solid #2563EB; background: #EFF6FF; }
         .glass-card { background: white; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         .hidden { display: none !important; }
-        /* Style for the small pill tags */
-        .tag { padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; }
+        .tag { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -57,7 +56,7 @@
             </div>
         </div>
 
-        <div id="spending-list" class="space-y-4"></div>
+        <div id="spending-list" class="space-y-3"></div>
     </div>
 
     <!-- NAVIGATION -->
@@ -79,18 +78,16 @@
             try {
                 const response = await fetch(CSV_URL);
                 const csvText = await response.text();
-                // Filter out null/empty timestamps immediately
                 allRecords = parseCSV(csvText).filter(r => r['時間戳記'] && r['時間戳記'].trim() !== "");
-                
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('rc-box').classList.remove('hidden');
                 initUI();
-            } catch (e) { document.getElementById('loading-state').innerText = "Load failed. Check CSV URL."; }
+            } catch (e) { document.getElementById('loading-state').innerText = "Load failed."; }
         }
 
         function parseCSV(text) {
             const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
-            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            const headers = lines.split(',').map(h => h.trim().replace(/"/g, ''));
             return lines.slice(1).map(line => {
                 const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
                 let obj = {};
@@ -100,27 +97,20 @@
         }
 
         function getYearFromTS(ts) {
-            if (!ts) return null;
-            return ts.split('/')[0].trim();
+            return ts ? ts.split('/')[0] : null;
         }
 
         function getMonthFromTS(ts) {
-            if (!ts) return null;
-            return ts.split('/')[1]?.trim();
+            return ts ? ts.split('/')[1] : null;
         }
 
         function initUI() {
             const years = [...new Set(allRecords.map(r => getYearFromTS(r['時間戳記'])))].filter(y => y && y.length >= 4).sort((a,b) => b-a);
             const cats = [...new Set(allRecords.map(r => r.Category))].filter(c => c);
-            
             document.getElementById('f-year').innerHTML += years.map(y => `<option value="${y}">${y}</option>`).join('');
             document.getElementById('f-cat').innerHTML += cats.map(c => `<option value="${c}">${c}</option>`).join('');
             document.getElementById('f-method').innerHTML += methodsList.map(m => `<option value="${m}">${m}</option>`).join('');
-
-            ['f-year', 'f-month', 'f-method', 'f-cat'].forEach(id => {
-                document.getElementById(id).addEventListener('change', renderSpendings);
-            });
-
+            ['f-year', 'f-month', 'f-method', 'f-cat'].forEach(id => document.getElementById(id).addEventListener('change', renderSpendings));
             renderFinance();
             renderSpendings();
         }
@@ -129,16 +119,10 @@
             const container = document.getElementById('balances');
             container.innerHTML = methodsList.map(m => {
                 let sum = allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
-                if (m === '💳 HSBC Debit Card') {
-                    sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0);
-                }
-                return `<div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card">
-                        <span class="text-slate-500 font-semibold text-xs uppercase tracking-wider">${m}</span>
-                        <span class="text-slate-900 font-bold">$${sum.toFixed(2)}</span>
-                    </div>`;
+                if (m === '💳 HSBC Debit Card') sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0);
+                return `<div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card"><span class="text-slate-500 font-semibold text-xs uppercase tracking-wider">${m}</span><span class="text-slate-900 font-bold">$${sum.toFixed(2)}</span></div>`;
             }).join('');
-            const totalRC = allRecords.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0);
-            document.getElementById('total-rc').innerText = totalRC.toFixed(2);
+            document.getElementById('total-rc').innerText = allRecords.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0).toFixed(2);
         }
 
         function renderSpendings() {
@@ -159,34 +143,21 @@
             document.getElementById('filter-cb').innerText = filtered.reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0).toFixed(2);
 
             document.getElementById('spending-list').innerHTML = filtered.reverse().map(r => {
-                // Get emoji from Category
                 const emoji = r.Category ? [...r.Category][0] : '💰';
-                // Simplify timestamp for the tag (e.g., 2026/2/11)
-                const dateTag = r['時間戳記'].split(' ')[0];
-                
                 return `
-                <div class="bg-white p-4 rounded-2xl glass-card flex items-start gap-4">
-                    <!-- Emoji Thumbnail -->
-                    <div class="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-slate-50 rounded-2xl text-3xl shadow-inner">
-                        ${emoji}
-                    </div>
-                    
+                <div class="bg-white p-3 rounded-2xl glass-card flex items-center gap-3">
+                    <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-slate-50 rounded-xl text-2xl">${emoji}</div>
                     <div class="flex-1 min-w-0">
-                        <div class="flex flex-col gap-1">
-                            <!-- Item Name -->
-                            <h3 class="text-slate-900 font-bold text-sm truncate">${r.Item || 'Untitled'}</h3>
-                            
-                            <!-- Tags Row -->
-                            <div class="flex flex-wrap gap-2 items-center">
-                                <span class="tag bg-slate-100 text-slate-500">${dateTag}</span>
-                                <span class="tag bg-blue-50 text-blue-500">${r.Method}</span>
+                        <div class="flex justify-between items-center">
+                            <div class="min-w-0 flex-1">
+                                <h3 class="text-slate-900 font-bold text-sm truncate">${r.Item || 'Untitled'}</h3>
+                                <div class="flex flex-wrap gap-1 mt-1">
+                                    <span class="tag bg-slate-100 text-slate-500">${r['時間戳記']}</span>
+                                    <span class="tag bg-blue-50 text-blue-500">${r.Method}</span>
+                                </div>
                             </div>
-
-                            <!-- Value Display Below -->
-                            <div class="mt-1">
-                                <span class="text-blue-700 font-extrabold text-base tracking-tight">
-                                    ${r.Currency} ${parseFloat(r.Amount || 0).toFixed(2)}
-                                </span>
+                            <div class="ml-2 text-right">
+                                <span class="text-blue-600 font-bold text-sm whitespace-nowrap">${r.Currency} ${parseFloat(r.Amount || 0).toFixed(2)}</span>
                             </div>
                         </div>
                     </div>
@@ -200,7 +171,6 @@
             document.getElementById('nav-fin').className = `flex flex-col items-center justify-center w-full h-full ${tab === 'finance' ? 'tab-active' : 'text-slate-400'}`;
             document.getElementById('nav-spe').className = `flex flex-col items-center justify-center w-full h-full ${tab === 'spendings' ? 'tab-active' : 'text-slate-400'}`;
         }
-
         loadData();
     </script>
 </body>
