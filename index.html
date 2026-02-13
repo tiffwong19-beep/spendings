@@ -34,9 +34,9 @@
         </div>
     </div>
 
-    <!-- DATA TAB (Shared for Spendings/Earnings) -->
+    <!-- DATA TAB -->
     <div id="data-tab" class="hidden p-5">
-        <h1 id="tab-title" class="text-2xl font-bold text-slate-800 mb-4 tracking-tight text-center">Spendings</h1>
+        <h1 id="tab-title" class="text-2xl font-bold text-slate-800 mb-4 tracking-tight text-center text-capitalize">Spendings</h1>
         <div class="grid grid-cols-2 gap-2 mb-2">
             <select id="f-year" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Years</option></select>
             <select id="f-month" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold">
@@ -69,7 +69,7 @@
         <div id="record-list" class="space-y-3"></div>
     </div>
 
-    <!-- NAVIGATION -->
+    <!-- NAV -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-20 z-50">
         <button onclick="switchTab('finance')" id="nav-fin" class="flex flex-col items-center justify-center w-full h-full tab-active">
             <span class="text-[10px] font-bold uppercase tracking-wider">Finance</span>
@@ -102,7 +102,7 @@
         let currentMode = 'spendings'; 
         const methodsList = Object.keys(defaultBalances);
 
-        // RESTORED CSV LOADING METHOD FROM PREVIOUS VERSION
+        // PREVIOUS VERSION CSV LOADING METHOD
         async function loadData() {
             try {
                 const response = await fetch(CSV_URL);
@@ -154,7 +154,10 @@
 
             container.innerHTML = methodsList.map(m => {
                 let sum = defaultBalances[m] + allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
-                if (m === '💳 HSBC Debit Card') sum += allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0);
+                if (m === '💳 HSBC Debit Card') {
+                    const cb = allRecords.filter(r => r.Method === m).reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0);
+                    sum += cb;
+                }
                 
                 grandTotal += sum;
                 return `<div class="bg-white p-4 rounded-2xl flex justify-between items-center glass-card">
@@ -175,7 +178,6 @@
 
             const filtered = allRecords.filter(r => {
                 const amt = parseFloat(r.Amount) || 0;
-                // Exclude Transfers from Spending/Earnings list
                 if (r.Category === '🏧 Transfers') return false;
                 
                 const matchType = currentMode === 'spendings' ? amt < 0 : amt > 0;
@@ -195,7 +197,7 @@
             }
 
             document.getElementById('record-list').innerHTML = filtered.slice().reverse().map(r => {
-                const emoji = r.Category ? [...r.Category] : '💰';
+                const emoji = r.Category ? [...r.Category][0] : '💰';
                 return `<div class="bg-white p-3 rounded-2xl glass-card flex items-center gap-3">
                     <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-slate-50 rounded-xl text-2xl">${emoji}</div>
                     <div class="flex-1 min-w-0">
@@ -223,7 +225,7 @@
             
             if (isDataView) {
                 currentMode = tab;
-                document.getElementById('tab-title').innerText = tab.charAt(0).toUpperCase() + tab.slice(1);
+                document.getElementById('tab-title').innerText = tab;
                 document.getElementById('total-label').innerText = tab === 'spendings' ? 'Total Spent' : 'Total Earned';
                 document.getElementById('reward-summary-row').classList.toggle('hidden', tab === 'earnings');
                 renderDataTab();
