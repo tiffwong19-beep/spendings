@@ -199,7 +199,7 @@
                 const amt = parseFloat(r.Amount) || 0;
                 if (r.Category === '🏧 Transfers') return false;
                 
-                const matchType = currentMode === 'spendings' ? amt < 0 : amt >= 0;
+                const matchType = currentMode === 'spendings' ? amt <= 0 : amt > 0;
                 const matchY = fy === "" || getYear(r['時間戳記']) === fy;
                 const matchM = fm === "" || getMonth(r['時間戳記']) === fm;
                 const matchMe = fme === "" || r.Method === fme;
