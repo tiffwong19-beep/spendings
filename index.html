@@ -255,7 +255,7 @@
                 currentMode = tab;
                 document.getElementById('tab-title').innerText = tab;
                 document.getElementById('total-label').innerText = tab === 'spendings' ? 'Total Spent' : (tab === 'savings' ? 'Total Saved' : 'Total Earned');
-                document.getElementById('reward-summary-row').classList.toggle('hidden', tab === 'earnings');
+                document.getElementById('reward-summary-row').classList.toggle('hidden',  tab !== 'spendings');
                 renderDataTab();
             }
 
