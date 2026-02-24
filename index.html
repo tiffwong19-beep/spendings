@@ -53,19 +53,19 @@
             <select id="f-cat" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-3 outline-none font-semibold"><option value="">All Categories</option></select>
         </div>
 
-        <div id="savings-boxes" class="hidden grid grid-cols-1 gap-3 mb-6">
-            <button onclick="filterSavingsByItem('Travel')" class="bg-white p-6 rounded-3xl glass-card border-l-4 border-blue-500 text-left active:scale-95 transition-transform">
-                <p class="text-[10px] uppercase font-bold text-slate-400">✈️ Travel</p>
+        <div id="savings-summary" class="hidden grid grid-cols-1 gap-3 mb-6">
+            <div class="bg-white p-5 rounded-2xl glass-card border-l-4 border-blue-500 shadow-sm">
+                <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">✈️ Travel Savings</p>
                 <p id="total-travel" class="text-2xl font-extrabold text-slate-800">$0.00</p>
-            </button>
-            <button onclick="filterSavingsByItem('Bank')" class="bg-white p-6 rounded-3xl glass-card border-l-4 border-slate-700 text-left active:scale-95 transition-transform">
-                <p class="text-[10px] uppercase font-bold text-slate-400">🏦 Bank</p>
+            </div>
+            <div class="bg-white p-5 rounded-2xl glass-card border-l-4 border-slate-700 shadow-sm">
+                <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">🏦 Bank Savings</p>
                 <p id="total-bank" class="text-2xl font-extrabold text-slate-800">$0.00</p>
-            </button>
-            <button onclick="filterSavingsByItem('Leisure/Festive')" class="bg-white p-6 rounded-3xl glass-card border-l-4 border-purple-500 text-left active:scale-95 transition-transform">
-                <p class="text-[10px] uppercase font-bold text-slate-400">🎉 Leisure/Festive</p>
+            </div>
+            <div class="bg-white p-5 rounded-2xl glass-card border-l-4 border-purple-500 shadow-sm">
+                <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">🎉 Leisure/Festive Savings</p>
                 <p id="total-leisure" class="text-2xl font-extrabold text-slate-800">$0.00</p>
-            </button>
+            </div>
         </div>
 
         <div id="standard-total-box" class="bg-white p-3 rounded-2xl glass-card mb-2 text-center border-l-4 border-blue-600">
@@ -223,8 +223,8 @@
 
             const filtered = allRecords.filter(r => {
                 const amt = parseFloat(r.Amount) || 0;
-                
                 let typeMatch = false;
+                
                 if (currentMode === 'savings') {
                     typeMatch = (r.Category === '💾 Savings');
                 } else {
@@ -239,19 +239,20 @@
                 return typeMatch && matchY && matchM && matchMe && matchCa;
             });
 
-            if (currentMode === 'savings') {
-                const getSum = (name) => allRecords
-                    .filter(r => r.Category === 'Savings' && r.Item === name)
+            const isSavings = (currentMode === 'savings');
+            document.getElementById('savings-summary').classList.toggle('hidden', !isSavings);
+            document.getElementById('standard-total-box').classList.toggle('hidden', isSavings);
+        
+            // 3. Calculate specifically for the 3 Savings Boxes
+            if (isSavings) {
+                const sumItem = (itemName) => filtered
+                    .filter(r => r.Item === itemName)
                     .reduce((sum, r) => sum + (parseFloat(r.Amount) || 0), 0);
         
-                document.getElementById('total-travel').innerText = `$${Math.abs(getSum('Travel')).toFixed(2)}`;
-                document.getElementById('total-bank').innerText = `$${Math.abs(getSum('Bank')).toFixed(2)}`;
-                document.getElementById('total-leisure').innerText = `$${Math.abs(getSum('Leisure/Festive')).toFixed(2)}`;
+                document.getElementById('total-travel').innerText = `$${Math.abs(sumItem('Travel')).toFixed(2)}`;
+                document.getElementById('total-bank').innerText = `$${Math.abs(sumItem('Bank')).toFixed(2)}`;
+                document.getElementById('total-leisure').innerText = `$${Math.abs(sumItem('Leisure/Festive')).toFixed(2)}`;
             }
-
-            const isSavings = (currentMode === 'savings');
-            document.getElementById('savings-boxes').classList.toggle('hidden', !isSavings);
-            document.getElementById('standard-total-box').classList.toggle('hidden', isSavings);
 
             const total = filtered.reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
             document.getElementById('total-filtered').innerText = `$${Math.abs(total).toFixed(2)}`;
