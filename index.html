@@ -245,7 +245,7 @@
         
             // 3. Calculate specifically for the 3 Savings Boxes
             if (isSavings) {
-                const sumItem = (itemName) => filtered
+                const sumItem = (itemName) => allRecords
                     .filter(r => r.Item === itemName)
                     .reduce((sum, r) => sum + (parseFloat(r.Amount) || 0), 0);
         
