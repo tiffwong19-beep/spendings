@@ -239,14 +239,6 @@
                 return typeMatch && matchY && matchM && matchMe && matchCa;
             });
 
-            const total = filtered.reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
-            document.getElementById('total-filtered').innerText = `$${Math.abs(total).toFixed(2)}`;
-            
-            if (currentMode === 'spendings') {
-                document.getElementById('filter-rc').innerText = filtered.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0).toFixed(2);
-                document.getElementById('filter-cb').innerText = filtered.reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0).toFixed(2);
-            }
-
             if (currentMode === 'savings') {
                 const getSum = (name) => allRecords
                     .filter(r => r.Category === 'Savings' && r.Item === name)
@@ -256,16 +248,18 @@
                 document.getElementById('total-bank').innerText = `$${Math.abs(getSum('Bank')).toFixed(2)}`;
                 document.getElementById('total-leisure').innerText = `$${Math.abs(getSum('Leisure/Festive')).toFixed(2)}`;
             }
-        
-            // 3. UI Toggles
+
             const isSavings = (currentMode === 'savings');
             document.getElementById('savings-boxes').classList.toggle('hidden', !isSavings);
             document.getElementById('standard-total-box').classList.toggle('hidden', isSavings);
-        
-            // Update Totals
+
             const total = filtered.reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
             document.getElementById('total-filtered').innerText = `$${Math.abs(total).toFixed(2)}`;
             
+            if (currentMode === 'spendings') {
+                document.getElementById('filter-rc').innerText = filtered.reduce((a, b) => a + (parseFloat(b.RC) || 0), 0).toFixed(2);
+                document.getElementById('filter-cb').innerText = filtered.reduce((a, b) => a + (parseFloat(b.Cashback) || 0), 0).toFixed(2);
+            }
 
             document.getElementById('record-list').innerHTML = filtered.slice().reverse().map(r => {
                 const emoji = r.Category ? [...r.Category][0] : '💰';
