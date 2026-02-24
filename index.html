@@ -203,7 +203,7 @@
                 
                 let typeMatch = false;
                 if (currentMode === 'savings') {
-                    typeMatch = (r.Category === 'Savings');
+                    typeMatch = (r.Category === '💾 Savings');
                 } else {
                     if (r.Category === '🏧 Transfers' || r.Category === '💾 Savings') return false;
                     typeMatch = currentMode === 'spendings' ? amt < 0 : amt  >=  0;
