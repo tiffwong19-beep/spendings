@@ -83,6 +83,9 @@
         <button onclick="switchTab('earnings')" id="nav-ear" class="flex flex-col items-center justify-center w-full h-full text-slate-400">
             <span class="text-[10px] font-bold uppercase tracking-wider">Earnings</span>
         </button>
+        <button onclick="switchTab('savings')" id="nav-sav" class="flex flex-col items-center justify-center w-full h-full text-slate-400">
+            <span class="text-[9px] font-bold uppercase">Savings</span>
+        </button>
     </nav>
 
     <script>
@@ -197,14 +200,20 @@
 
             const filtered = allRecords.filter(r => {
                 const amt = parseFloat(r.Amount) || 0;
-                if (r.Category === '🏧 Transfers') return false;
                 
-                const matchType = currentMode === 'spendings' ? amt <= 0 : amt > 0;
+                let typeMatch = false;
+                if (currentMode === 'savings') {
+                    typeMatch = (r.Category === 'Savings');
+                } else {
+                    if (r.Category === '🏧 Transfers' || r.Category === 'Savings') return false;
+                    typeMatch = currentMode === 'spendings' ? amt < 0 : amt  >=  0;
+                }
+
                 const matchY = fy === "" || getYear(r['時間戳記']) === fy;
                 const matchM = fm === "" || getMonth(r['時間戳記']) === fm;
                 const matchMe = fme === "" || r.Method === fme;
                 const matchCa = fc === "" || r.Category === fc;
-                return matchType && matchY && matchM && matchMe && matchCa;
+                return typeMatch && matchY && matchM && matchMe && matchCa;
             });
 
             const total = filtered.reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
@@ -238,14 +247,14 @@
         }
 
         function switchTab(tab) {
-            const isDataView = (tab === 'spendings' || tab === 'earnings');
+            const isDataView = (tab === 'spendings' || tab === 'earnings' || tab === 'savings');
             document.getElementById('finance-tab').classList.toggle('hidden', tab !== 'finance');
             document.getElementById('data-tab').classList.toggle('hidden', !isDataView);
             
             if (isDataView) {
                 currentMode = tab;
                 document.getElementById('tab-title').innerText = tab;
-                document.getElementById('total-label').innerText = tab === 'spendings' ? 'Total Spent' : 'Total Earned';
+                document.getElementById('total-label').innerText = tab === 'spendings' ? 'Total Spent' : (tab === 'savings' ? 'Total Saved' : 'Total Earned');
                 document.getElementById('reward-summary-row').classList.toggle('hidden', tab === 'earnings');
                 renderDataTab();
             }
@@ -253,6 +262,7 @@
             document.getElementById('nav-fin').className = `flex flex-col items-center justify-center w-full h-full ${tab === 'finance' ? 'tab-active' : 'text-slate-400'}`;
             document.getElementById('nav-spe').className = `flex flex-col items-center justify-center w-full h-full ${tab === 'spendings' ? 'tab-active' : 'text-slate-400'}`;
             document.getElementById('nav-ear').className = `flex flex-col items-center justify-center w-full h-full ${tab === 'earnings' ? 'tab-active' : 'text-slate-400'}`;
+            document.getElementById('nav-sav').className = `flex flex-col items-center justify-center w-full h-full ${tab === 'savings' ? 'tab-active' : 'text-slate-400'}`;
         }
 
         loadData();
