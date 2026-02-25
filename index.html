@@ -249,9 +249,9 @@
                     .filter(r => r.Item === itemName)
                     .reduce((sum, r) => sum + (parseFloat(r.Amount) || 0), 0);
         
-                document.getElementById('total-travel').innerText = `$${Math.abs(sumItem('Travel')).toFixed(2)}`;
-                document.getElementById('total-bank').innerText = `$${Math.abs(sumItem('Bank')).toFixed(2)}`;
-                document.getElementById('total-leisure').innerText = `$${Math.abs(sumItem('Leisure/Festive')).toFixed(2)}`;
+                document.getElementById('total-travel').innerText = `$${Math.abs(sumItem('✈️ Travel')).toFixed(2)}`;
+                document.getElementById('total-bank').innerText = `$${Math.abs(sumItem('🏦 Bank')).toFixed(2)}`;
+                document.getElementById('total-leisure').innerText = `$${Math.abs(sumItem('🎉 Leisure/Festive')).toFixed(2)}`;
             }
 
             const total = filtered.reduce((a, b) => a + (parseFloat(b.Amount) || 0), 0);
