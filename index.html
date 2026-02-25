@@ -226,7 +226,7 @@
                 let typeMatch = false;
                 
                 if (currentMode === 'savings') {
-                    typeMatch = (r.Category === '💾 Savings');
+                    typeMatch = (r.Category === '🏧 Transfers' && r.Method === '🔒 Save');
                 } else {
                     if (r.Category === '🏧 Transfers' || r.Category === '💾 Savings') return false;
                     typeMatch = currentMode === 'spendings' ? amt < 0 : amt  >=  0;
@@ -246,7 +246,7 @@
             // 3. Calculate specifically for the 3 Savings Boxes
             if (isSavings) {
                 const sumItem = (itemName) => allRecords
-                    .filter(r => r.Item === itemName)
+                    .filter(r => r.Category === '🏧 Transfers' && r.Method === '🔒 Save' && r.Item === itemName)
                     .reduce((sum, r) => sum + (parseFloat(r.Amount) || 0), 0);
         
                 document.getElementById('total-travel').innerText = `$${Math.abs(sumItem('✈️ Travel')).toFixed(2)}`;
@@ -264,6 +264,9 @@
 
             document.getElementById('record-list').innerHTML = filtered.slice().reverse().map(r => {
                 const emoji = r.Category ? [...r.Category][0] : '💰';
+                const amt = parseFloat(r.Amount || 0);
+                const textColor = amt < 0 ? 'text-red-500' : 'text-blue-600';
+                const displayAmount = amt.toFixed(2);
                 return `<div class="bg-white p-2 rounded-2xl glass-card flex items-center gap-3">
                     <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-slate-50 rounded-xl text-2xl">${emoji}</div>
                     <div class="flex-1 min-w-0">
@@ -276,7 +279,7 @@
                                 </div>
                             </div>
                             <div class="ml-2 text-right">
-                                <span class="text-blue-600 font-bold text-sm whitespace-nowrap">${r.Currency} ${Math.abs(parseFloat(r.Amount || 0)).toFixed(2)}</span>
+                                <span class="${textColor} font-bold text-sm whitespace-nowrap">${r.Currency} ${displayAmount}
                             </div>
                         </div>
                     </div>
